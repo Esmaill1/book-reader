@@ -41,7 +41,6 @@ export default function ReaderChrome({
   chapterTitle,
   currentPage,
   totalPages,
-  percent,
   isBookmarked,
   zoomDisplay,
   onZoomIn,
@@ -59,6 +58,8 @@ export default function ReaderChrome({
   const [sliderVal, setSliderVal] = useState(currentPage);
   const isDraggingRef = useRef(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const maxPage = Math.max(1, totalPages);
 
   // Sync with external currentPage only when not actively dragging
   useEffect(() => {
@@ -84,7 +85,7 @@ export default function ReaderChrome({
   const displayPage = isDraggingRef.current ? sliderVal : currentPage;
   const displayPercent = Math.min(
     100,
-    Math.round((displayPage / Math.max(1, totalPages)) * 100)
+    Math.round((displayPage / maxPage) * 100)
   );
 
   return (
@@ -95,27 +96,30 @@ export default function ReaderChrome({
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.leftGroup}>
-          <Link href="/" className={styles.backBtn} title="Back to Library">
-            <ArrowLeft size={18} />
+          <Link href="/" className={styles.backBtn} title="Back to Library" aria-label="Back to Library">
+            <ArrowLeft size={20} aria-hidden="true" />
           </Link>
           <div className={styles.titleArea}>
             <span className={styles.bookTitle} title={bookTitle}>
               {bookTitle}
             </span>
             {chapterTitle && (
-              <span className={styles.chapterTitle}>{chapterTitle}</span>
+              <span className={styles.chapterTitle} title={chapterTitle}>
+                {chapterTitle}
+              </span>
             )}
           </div>
         </div>
 
-        <div className={styles.rightGroup}>
+        <nav className={styles.rightGroup} aria-label="Reader controls">
           <button
             onClick={onToggleBookmark}
             className={`${styles.actionBtn} ${isBookmarked ? styles.bookmarked : ''}`}
             title={isBookmarked ? 'Remove Bookmark' : 'Bookmark Page'}
-            aria-label="Bookmark"
+            aria-label={isBookmarked ? 'Remove Bookmark' : 'Bookmark Page'}
+            aria-pressed={isBookmarked}
           >
-            <BookmarkIcon size={19} fill={isBookmarked ? 'currentColor' : 'none'} />
+            <BookmarkIcon size={20} aria-hidden="true" fill={isBookmarked ? 'currentColor' : 'none'} />
           </button>
           <button
             onClick={onOpenBookmarks}
@@ -123,7 +127,7 @@ export default function ReaderChrome({
             title="Saved Bookmarks & Notes"
             aria-label="Bookmarks"
           >
-            <BookmarkIcon size={19} />
+            <BookmarkIcon size={20} aria-hidden="true" />
           </button>
           <button
             onClick={onOpenTOC}
@@ -131,17 +135,17 @@ export default function ReaderChrome({
             title="Table of Contents"
             aria-label="Contents"
           >
-            <ListTree size={19} />
+            <ListTree size={20} aria-hidden="true" />
           </button>
           <button
             onClick={onOpenSettings}
             className={styles.actionBtn}
             title="Reader Settings"
-            aria-label="Settings"
+            aria-label="Reader Settings"
           >
-            <SettingsIcon size={19} />
+            <SettingsIcon size={20} aria-hidden="true" />
           </button>
-        </div>
+        </nav>
       </header>
 
       {/* Bottom Bar */}
@@ -153,8 +157,13 @@ export default function ReaderChrome({
           <input
             type="range"
             min={1}
-            max={Math.max(1, totalPages)}
+            max={maxPage}
             value={sliderVal}
+            aria-label="Page"
+            aria-valuemin={1}
+            aria-valuemax={maxPage}
+            aria-valuenow={sliderVal}
+            aria-valuetext={`Page ${sliderVal} of ${maxPage}`}
             onMouseDown={() => {
               isDraggingRef.current = true;
             }}
@@ -176,36 +185,39 @@ export default function ReaderChrome({
               disabled={currentPage <= 1}
               className={styles.navArrowBtn}
               title="Previous Page (Left Arrow)"
+              aria-label="Previous Page"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={16} aria-hidden="true" />
               <span>Prev</span>
             </button>
             <button
               onClick={onNextPage}
-              disabled={currentPage >= totalPages}
+              disabled={currentPage >= maxPage}
               className={styles.navArrowBtn}
               title="Next Page (Right Arrow)"
+              aria-label="Next Page"
             >
               <span>Next</span>
-              <ChevronRight size={14} />
+              <ChevronRight size={16} aria-hidden="true" />
             </button>
           </div>
 
           {/* Zoom Controls */}
           {onZoomIn && onZoomOut && (
-            <div className={styles.zoomControls}>
+            <div className={styles.zoomControls} aria-label="Zoom controls">
               <button
                 onClick={onZoomOut}
                 className={styles.zoomBtn}
                 title="Zoom Out (-)"
                 aria-label="Zoom Out"
               >
-                <ZoomOut size={14} />
+                <ZoomOut size={18} aria-hidden="true" />
               </button>
               <button
                 onClick={onZoomReset}
                 className={styles.zoomLabelBtn}
                 title="Click to reset zoom (0)"
+                aria-label={`Reset zoom, current ${zoomDisplay || 'Fit'}`}
               >
                 <span>{zoomDisplay || 'Fit'}</span>
               </button>
@@ -215,15 +227,15 @@ export default function ReaderChrome({
                 title="Zoom In (+)"
                 aria-label="Zoom In"
               >
-                <ZoomIn size={14} />
+                <ZoomIn size={18} aria-hidden="true" />
               </button>
             </div>
           )}
 
           <div>
-            <span>
+            <p className={styles.pageInfo} aria-live="polite">
               Page {displayPage} of {totalPages} ({displayPercent}%)
-            </span>
+            </p>
           </div>
         </div>
       </footer>

@@ -3,13 +3,13 @@
 import React, { useState, useMemo } from 'react';
 import { Book, ReadingSession, BookFormat } from '@/types';
 import BookCard from './BookCard';
-import { Search, BookPlus, Library } from 'lucide-react';
+import { Search, BookPlus, LibraryBig, SearchX, X } from 'lucide-react';
 import styles from './BookGrid.module.css';
 
 interface BookGridProps {
   books: Book[];
   sessions: Record<string, ReadingSession>;
-  onDeleteBook: (e: React.MouseEvent, bookId: string) => void;
+  onDeleteBook: (bookId: string) => void;
   onOpenUpload: () => void;
 }
 
@@ -34,36 +34,52 @@ export default function BookGrid({
     });
   }, [books, search, formatFilter]);
 
+  const isFiltering = search.trim() !== '' || formatFilter !== 'all';
+
   return (
     <div className={styles.container}>
-      <div className={styles.filterBar}>
+      <div className={styles.filterBar} role="search">
         <div className={styles.searchBox}>
-          <Search size={18} className={styles.searchIcon} />
+          <Search size={18} className={styles.searchIcon} aria-hidden="true" />
           <input
             type="text"
-            placeholder="Search books by title or author..."
+            placeholder="Search by title or author…"
+            aria-label="Search books by title or author"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={styles.searchInput}
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className={styles.clearSearchBtn}
+              aria-label="Clear search"
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+          )}
         </div>
 
-        <div className={styles.formatTabs}>
+        <div className={styles.formatTabs} role="group" aria-label="Filter by format">
           <button
             onClick={() => setFormatFilter('all')}
             className={`${styles.tabBtn} ${formatFilter === 'all' ? styles.active : ''}`}
+            aria-pressed={formatFilter === 'all'}
           >
             All ({books.length})
           </button>
           <button
             onClick={() => setFormatFilter('pdf')}
             className={`${styles.tabBtn} ${formatFilter === 'pdf' ? styles.active : ''}`}
+            aria-pressed={formatFilter === 'pdf'}
           >
             PDF ({books.filter((b) => b.format === 'pdf').length})
           </button>
           <button
             onClick={() => setFormatFilter('epub')}
             className={`${styles.tabBtn} ${formatFilter === 'epub' ? styles.active : ''}`}
+            aria-pressed={formatFilter === 'epub'}
           >
             EPUB ({books.filter((b) => b.format === 'epub').length})
           </button>
@@ -71,31 +87,49 @@ export default function BookGrid({
       </div>
 
       {filteredBooks.length > 0 ? (
-        <div className={styles.grid}>
+        <ul className={styles.grid} aria-label="All books">
           {filteredBooks.map((book) => (
-            <BookCard
-              key={book.id}
-              book={book}
-              session={sessions[book.id]}
-              onDelete={onDeleteBook}
-            />
+            <li key={book.id} className={styles.gridItem}>
+              <BookCard
+                book={book}
+                session={sessions[book.id]}
+                onDelete={onDeleteBook}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <div className={styles.emptyState}>
-          <Library className={styles.emptyIcon} />
+          <div className={styles.emptyIconWrap}>
+            {isFiltering ? (
+              <SearchX className={styles.emptyIcon} aria-hidden="true" />
+            ) : (
+              <LibraryBig className={styles.emptyIcon} aria-hidden="true" />
+            )}
+          </div>
           <h3 className={styles.emptyTitle}>
-            {search ? 'No matching books found' : 'Your library is empty'}
+            {isFiltering ? 'No books match your search' : 'Your shelf is empty'}
           </h3>
           <p className={styles.emptyDesc}>
-            {search
-              ? 'Try searching with different keywords or clearing your filters.'
-              : 'Upload PDF or EPUB books to start reading and syncing your progress across your devices.'}
+            {isFiltering
+              ? 'Try a different keyword, or clear the search to browse your whole library.'
+              : 'Add a PDF or EPUB to start reading, and your progress will sync across your devices.'}
           </p>
-          {!search && (
-            <button onClick={onOpenUpload} className={styles.uploadEmptyBtn}>
-              <BookPlus size={18} />
-              <span>Upload Book</span>
+          {isFiltering ? (
+            <button
+              onClick={() => {
+                setSearch('');
+                setFormatFilter('all');
+              }}
+              className={styles.emptyGhostBtn}
+            >
+              <X size={18} aria-hidden="true" />
+              <span>Clear Filters</span>
+            </button>
+          ) : (
+            <button onClick={onOpenUpload} className={styles.emptyPrimaryBtn}>
+              <BookPlus size={18} aria-hidden="true" />
+              <span>Add your first book</span>
             </button>
           )}
         </div>

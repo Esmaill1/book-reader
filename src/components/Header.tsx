@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Sun, Coffee, Moon, Sparkles, Plus } from 'lucide-react';
+import { BookOpen, Sun, Coffee, Moon, Sparkles, Plus, Wifi, WifiOff } from 'lucide-react';
 import { ReadingTheme } from '@/types';
 import { isCloudConfigured } from '@/lib/supabase';
 import styles from './Header.module.css';
@@ -10,6 +10,13 @@ import styles from './Header.module.css';
 interface HeaderProps {
   onOpenUpload: () => void;
 }
+
+const THEMES: { id: ReadingTheme; name: string; hint: string; Icon: typeof Sun }[] = [
+  { id: 'day', name: 'Day', hint: 'Clean Light', Icon: Sun },
+  { id: 'sepia', name: 'Sepia', hint: 'Warm Paper', Icon: Coffee },
+  { id: 'night', name: 'Night', hint: 'Dark Slate', Icon: Moon },
+  { id: 'oled', name: 'OLED', hint: 'Pure Pitch Black', Icon: Sparkles },
+];
 
 export default function Header({ onOpenUpload }: HeaderProps) {
   const [theme, setTheme] = useState<ReadingTheme>('night');
@@ -31,56 +38,41 @@ export default function Header({ onOpenUpload }: HeaderProps) {
     <header className={styles.header}>
       <div className={styles.leftSection}>
         <Link href="/" className={styles.brand}>
-          <BookOpen className={styles.logoIcon} />
+          <BookOpen className={styles.logoIcon} aria-hidden="true" />
           <span>BookEra</span>
         </Link>
-        <div className={styles.syncBadge} title={cloudReady ? "Cloud Sync Active" : "Local Storage Mode (Offline ready)"}>
-          <span className={`${styles.statusDot} ${cloudReady ? styles.online : styles.local}`} />
+        <div className={styles.syncBadge} title={cloudReady ? 'Cloud Sync Active' : 'Local Storage Mode (Offline ready)'}>
+          {cloudReady ? (
+            <Wifi className={`${styles.statusIcon} ${styles.online}`} aria-hidden="true" />
+          ) : (
+            <WifiOff className={`${styles.statusIcon} ${styles.local}`} aria-hidden="true" />
+          )}
+          <span className={`${styles.statusDot} ${cloudReady ? styles.online : styles.local}`} aria-hidden="true" />
           <span>{cloudReady ? 'Cloud Synced' : 'Local Library'}</span>
         </div>
       </div>
 
-      <div className={styles.rightSection}>
-        <div className={styles.themeSelector} title="Switch Reading Theme">
-          <button
-            onClick={() => changeTheme('day')}
-            className={`${styles.themeBtn} ${theme === 'day' ? styles.active : ''}`}
-            aria-label="Day Theme"
-            title="Day (Clean Light)"
-          >
-            <Sun size={17} />
-          </button>
-          <button
-            onClick={() => changeTheme('sepia')}
-            className={`${styles.themeBtn} ${theme === 'sepia' ? styles.active : ''}`}
-            aria-label="Sepia Theme"
-            title="Sepia (Warm Paper)"
-          >
-            <Coffee size={17} />
-          </button>
-          <button
-            onClick={() => changeTheme('night')}
-            className={`${styles.themeBtn} ${theme === 'night' ? styles.active : ''}`}
-            aria-label="Night Theme"
-            title="Night (Dark Slate)"
-          >
-            <Moon size={17} />
-          </button>
-          <button
-            onClick={() => changeTheme('oled')}
-            className={`${styles.themeBtn} ${theme === 'oled' ? styles.active : ''}`}
-            aria-label="OLED Black Theme"
-            title="OLED (Pure Pitch Black)"
-          >
-            <Sparkles size={17} />
-          </button>
+      <nav className={styles.rightSection} aria-label="Library controls">
+        <div className={styles.themeSelector} role="group" aria-label="Reading theme" title="Switch Reading Theme">
+          {THEMES.map(({ id, name, hint, Icon }) => (
+            <button
+              key={id}
+              onClick={() => changeTheme(id)}
+              className={`${styles.themeBtn} ${theme === id ? styles.active : ''}`}
+              aria-label={`${name} Theme`}
+              aria-pressed={theme === id}
+              title={`${name} (${hint})`}
+            >
+              <Icon size={17} aria-hidden="true" />
+            </button>
+          ))}
         </div>
 
         <button onClick={onOpenUpload} className={styles.uploadBtn}>
-          <Plus size={18} />
+          <Plus size={18} aria-hidden="true" />
           <span>Add Book</span>
         </button>
-      </div>
+      </nav>
     </header>
   );
 }

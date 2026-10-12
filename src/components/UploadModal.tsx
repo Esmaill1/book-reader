@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { X, UploadCloud, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, UploadCloud, Loader2, AlertCircle } from 'lucide-react';
 import { parseBookFile } from '@/lib/parser';
 import { saveLocalBook } from '@/lib/db';
 import { uploadBookToCloud, isCloudConfigured } from '@/lib/supabase';
@@ -18,19 +18,89 @@ export default function UploadModal({ isOpen, onClose, onBookAdded }: UploadModa
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [notice, setNotice] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const lastFocused = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Focus management, scroll lock, Escape + focus trap
+  useEffect(() => {
+    if (!isOpen) return;
+
+    lastFocused.current = document.activeElement as HTMLElement | null;
+    setErrorMessage('');
+    setNotice('');
+    setIsDragging(false);
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const raf = requestAnimationFrame(() => {
+      closeBtnRef.current?.focus();
+    });
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCloseRef.current();
+        return;
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const dialogEl = dialogRef.current;
+        const focusables = Array.from(
+          dialogEl.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((el) => !el.hasAttribute('disabled'));
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        } else if (!dialogEl.contains(document.activeElement)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+      lastFocused.current?.focus();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
+    if (files.length > 1) {
+      setNotice(`Adding one book at a time — “${files[0].name}” selected`);
+    } else {
+      setNotice('');
+    }
+
     const file = files[0];
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (ext !== 'pdf' && ext !== 'epub') {
-      alert('Please upload a PDF or EPUB book file.');
+      setErrorMessage(
+        `“${file.name}” isn’t a PDF or EPUB file. Please choose a supported book file (.pdf or .epub).`
+      );
       return;
     }
+
+    setErrorMessage('');
 
     try {
       setIsProcessing(true);
@@ -70,7 +140,9 @@ export default function UploadModal({ isOpen, onClose, onBookAdded }: UploadModa
       onClose();
     } catch (err) {
       console.error('Failed to process book:', err);
-      alert('Could not parse this book file. Please try another file.');
+      setErrorMessage(
+        `We couldn’t read “${file.name}”. The file may be damaged or use an unsupported PDF/EPUB version — try another file.`
+      );
     } finally {
       setIsProcessing(false);
       setStatusMessage('');
@@ -82,7 +154,8 @@ export default function UploadModal({ isOpen, onClose, onBookAdded }: UploadModa
     setIsDragging(true);
   };
 
-  const onDragLeave = () => {
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
     setIsDragging(false);
   };
 
@@ -94,41 +167,86 @@ export default function UploadModal({ isOpen, onClose, onBookAdded }: UploadModa
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upload-modal-title"
+        aria-describedby={errorMessage ? 'upload-error' : notice ? 'upload-notice' : undefined}
+        ref={dialogRef}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.header}>
-          <h2 className={styles.title}>Add Book to Library</h2>
-          <button onClick={onClose} className={styles.closeBtn} aria-label="Close modal">
-            <X size={20} />
+          <h2 id="upload-modal-title" className={styles.title}>
+            Add Book to Library
+          </h2>
+          <button
+            onClick={onClose}
+            ref={closeBtnRef}
+            className={styles.closeBtn}
+            aria-label="Close dialog"
+            title="Close"
+          >
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
+
+        {errorMessage && (
+          <div className={styles.errorBox} role="alert" id="upload-error">
+            <AlertCircle size={18} className={styles.errorIcon} aria-hidden="true" />
+            <p className={styles.errorText}>{errorMessage}</p>
+          </div>
+        )}
+
+        {notice && !errorMessage && (
+          <div className={styles.infoBox} role="status" id="upload-notice">
+            <p className={styles.infoText}>{notice}</p>
+          </div>
+        )}
 
         {isProcessing ? (
           <div className={styles.progressContainer}>
             <div className={styles.progressLabel}>
               <span>{statusMessage}</span>
-              <Loader2 size={18} className={styles.spinner} />
+              <Loader2 size={18} className={styles.spinner} aria-hidden="true" />
             </div>
           </div>
         ) : (
           <div
-            className={`${styles.dropzone} ${isDragging ? styles.active : ''}`}
+            className={`${styles.dropzone} ${isDragging ? styles.dragOver : ''}`}
             onDragOver={onDragOver}
+            onDragEnter={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <UploadCloud className={styles.uploadIcon} />
-            <div>
-              <p className={styles.dropTitle}>Click to upload or drag & drop</p>
-              <p className={styles.dropSubtitle}>Supports PDF and EPUB files up to 100MB</p>
-            </div>
             <input
               type="file"
               ref={fileInputRef}
               accept=".pdf,.epub,application/pdf,application/epub+zip"
               className={styles.hiddenInput}
-              onChange={(e) => handleFiles(e.target.files)}
+              onChange={(e) => {
+                handleFiles(e.target.files);
+                e.target.value = '';
+              }}
             />
+            <div className={styles.dropzoneBody}>
+              <UploadCloud className={styles.uploadIcon} aria-hidden="true" />
+              <div>
+                <p className={styles.dropTitle}>Click to upload or drag &amp; drop</p>
+                <p className={styles.dropSubtitle}>Supports PDF and EPUB files up to 100MB</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className={styles.browseBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+            >
+              Choose file
+            </button>
           </div>
         )}
       </div>

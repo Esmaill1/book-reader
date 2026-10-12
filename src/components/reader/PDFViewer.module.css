@@ -7,7 +7,7 @@
   flex-direction: column;
   align-items: center;
   background: var(--bg-main);
-  padding: 4.5rem 1rem 6rem;
+  padding: var(--space-16) var(--space-4) var(--space-16);
   user-select: text;
   -webkit-user-select: text;
 }
@@ -17,7 +17,7 @@
   height: 100vh;
   display: flex;
   background: var(--bg-main);
-  padding: 4.5rem 1rem 5.5rem;
+  padding: var(--space-16) var(--space-4) var(--space-16);
   box-sizing: border-box;
   overflow: auto;
 }
@@ -25,14 +25,13 @@
 .pageWrapper {
   margin: auto;
   position: relative;
-  background: #ffffff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  border-radius: 4px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  transition: background-color var(--transition-base), box-shadow var(--transition-base);
   flex-shrink: 0;
 }
 
@@ -40,48 +39,7 @@
   display: block;
   max-width: 100%;
   height: auto;
-  transition: filter 0.25s ease;
-}
-
-/* ========================================================
-   ReadEra PDF Themes (Transforms PDF paper and typography)
-   ======================================================== */
-
-/* 1. Day Mode: Natural crisp white paper */
-.day {
-  background: #ffffff !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
-}
-.day .pdfCanvas {
-  filter: none;
-}
-
-/* 2. Sepia Mode: Warm vintage parchment, soft dark-amber text */
-.sepia {
-  background: #fbf0d9 !important;
-  box-shadow: 0 4px 24px rgba(74, 56, 36, 0.22);
-}
-.sepia .pdfCanvas {
-  filter: sepia(0.68) contrast(0.92) brightness(0.96);
-  mix-blend-mode: multiply;
-}
-
-/* 3. Night Mode: Eye-comfort charcoal dark background with light text */
-.night {
-  background: #181c24 !important;
-  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.65);
-}
-.night .pdfCanvas {
-  filter: invert(0.88) hue-rotate(180deg) contrast(0.95) brightness(0.92);
-}
-
-/* 4. OLED Black Mode: Pure #000000 pitch black with high-contrast text */
-.oled {
-  background: #000000 !important;
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.9);
-}
-.oled .pdfCanvas {
-  filter: invert(1) hue-rotate(180deg) contrast(1.08) brightness(0.96);
+  transition: filter var(--transition-base);
 }
 
 .loadingOverlay {
@@ -89,19 +47,149 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: var(--space-3);
   height: 60vh;
   color: var(--text-muted);
 }
 
-.spinner {
-  animation: spin 1s linear infinite;
+.loadingBadge {
+  position: relative;
+  width: var(--space-16);
+  height: var(--space-16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+}
+
+.loadingBookIcon {
   color: var(--accent);
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.loadingBadgeRing {
+  position: absolute;
+  inset: calc(-1 * var(--space-1));
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  border-top-color: var(--accent);
+  border-right-color: var(--accent);
+  animation: ringSpin 1.1s linear infinite;
+}
+
+.loadingText {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-main);
+}
+
+.loadingSkeleton {
+  width: 10rem;
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-elevated);
+  overflow: hidden;
+  position: relative;
+}
+
+.loadingSkeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* Error state */
+.stateWrap {
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--space-4);
+  text-align: center;
+  flex-wrap: wrap;
+}
+
+.errorBadge {
+  width: var(--space-16);
+  height: var(--space-16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--color-danger);
+  box-shadow: var(--shadow-lg);
+}
+
+.stateTitle {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  max-width: 28rem;
+}
+
+.stateMessage {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  max-width: 30rem;
+  line-height: 1.6;
+}
+
+.stateActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.primaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-6);
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--transition-fast);
+}
+
+.primaryAction:hover {
+  background: var(--accent-hover);
+}
+
+.secondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-6);
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.secondaryAction:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ========================================================
@@ -116,7 +204,7 @@
   flex-direction: column;
   align-items: center;
   background: var(--bg-main);
-  padding: 4.5rem 1rem 6rem;
+  padding: var(--space-16) var(--space-4) var(--space-16);
   box-sizing: border-box;
   scroll-behavior: smooth;
   user-select: text;
@@ -132,23 +220,23 @@
 
 .continuousPageItem {
   position: relative;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
-  border-radius: 4px;
+  margin-bottom: var(--space-8);
+  border-radius: var(--radius-sm);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  background: var(--bg-surface);
+  transition: background-color var(--transition-base), box-shadow var(--transition-base);
   flex-shrink: 0;
 }
 
 .continuousPageItem:last-child {
-  margin-bottom: 5rem;
+  margin-bottom: var(--space-16);
 }
 
 .continuousPlaceholder {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -156,16 +244,55 @@
   width: 100%;
   height: 100%;
   color: var(--text-muted);
-  font-size: 0.875rem;
-  background: rgba(125, 125, 125, 0.05);
+  font-size: var(--text-sm);
+  background: var(--bg-surface-elevated);
   user-select: none;
+}
+
+.continuousPlaceholderText {
+  position: relative;
+  z-index: 1;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.placeholderShimmer {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes ringSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingBadgeRing,
+  .loadingSkeleton::after,
+  .placeholderShimmer {
+    animation: none;
+  }
 }
 
 @media (max-width: 640px) {
   .container {
-    padding: 3.8rem 0.5rem 5rem;
+    padding: var(--space-14) var(--space-2) var(--space-16);
   }
+
   .continuousContainer {
-    padding: 3.8rem 0.5rem 5.5rem;
+    padding: var(--space-14) var(--space-2) var(--space-16);
   }
 }

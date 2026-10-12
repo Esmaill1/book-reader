@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PDFDocumentProxy } from 'pdfjs-dist';
 import { ReadingTheme } from '@/types';
+import { getPdfThemeSurface, PDF_PAPER_WHITE } from './PDFViewer';
 import styles from './PDFViewer.module.css';
 
 interface PDFContinuousPageProps {
@@ -87,7 +88,7 @@ export default function PDFContinuousPage({
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = PDF_PAPER_WHITE;
         ctx.fillRect(0, 0, viewport.width, viewport.height);
 
         const task = page.render({
@@ -122,29 +123,35 @@ export default function PDFContinuousPage({
     };
   }, [doc, pageNum, scale, shouldRender]);
 
-  const activeThemeClass =
-    colorMode === 'original' ? styles.day : styles[theme] || styles.night;
+  const surface = getPdfThemeSurface(theme, colorMode);
 
   return (
     <div
       id={`pdf-page-${pageNum}`}
       ref={pageContainerRef}
       data-page-num={pageNum}
-      className={`${styles.continuousPageItem} ${activeThemeClass}`}
+      className={styles.continuousPageItem}
       style={{
         width: `${Math.round(width)}px`,
         height: `${Math.round(height)}px`,
+        background: surface.paper,
+        boxShadow: surface.shadow,
       }}
       onClick={onToggleControls}
     >
       <canvas
         ref={canvasRef}
         className={styles.pdfCanvas}
-        style={{ display: shouldRender && isRendered ? 'block' : 'none' }}
+        style={{
+          display: shouldRender && isRendered ? 'block' : 'none',
+          filter: surface.canvasFilter,
+          mixBlendMode: surface.blend,
+        }}
       />
       {(!shouldRender || !isRendered) && (
-        <div className={styles.continuousPlaceholder}>
-          <span>Page {pageNum}</span>
+        <div className={styles.continuousPlaceholder} aria-hidden="true">
+          {shouldRender && !isRendered && <span className={styles.placeholderShimmer} />}
+          <span className={styles.continuousPlaceholderText}>Page {pageNum}</span>
         </div>
       )}
     </div>

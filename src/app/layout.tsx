@@ -1,9 +1,42 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Merriweather, Cairo, Amiri } from "next/font/google";
 import "./globals.css";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const merriweather = Merriweather({
+  subsets: ["latin"],
+  weight: ["300", "400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-merriweather",
+  display: "swap",
+});
+
+const cairo = Cairo({
+  subsets: ["arabic", "latin"],
+  variable: "--font-cairo",
+  display: "swap",
+});
+
+const amiri = Amiri({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-amiri",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "BookEra Web — Personal Cloud Reader",
-  description: "Personal cloud book reader for PDF and EPUB with cross-device reading progress sync, customizable typography, and offline support.",
+  title: {
+    default: "BookEra Web — Personal Cloud Reader",
+    template: "%s — BookEra",
+  },
+  description:
+    "Personal cloud book reader for PDF and EPUB with cross-device reading progress sync, customizable typography, and offline support.",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
@@ -13,10 +46,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
-  themeColor: "#181c24",
+  themeColor: "#14181f",
 };
 
 export default function RootLayout({
@@ -25,7 +56,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="night" suppressHydrationWarning>
+    <html
+      lang="en"
+      data-theme="night"
+      suppressHydrationWarning
+      className={`${inter.variable} ${merriweather.variable} ${cairo.variable} ${amiri.variable}`}
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{

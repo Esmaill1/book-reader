@@ -4,8 +4,53 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import ePub, { Book as EPubBook, Rendition } from 'epubjs';
 import { TypographySettings, ReadingTheme } from '@/types';
 import { TOCItem } from './TOCDrawer';
-import { Loader2 } from 'lucide-react';
+import { BookOpen, BookX } from 'lucide-react';
 import styles from './EPUBViewer.module.css';
+
+export const EPUB_THEME_FALLBACK: Record<
+  ReadingTheme,
+  { color: string; bg: string }
+> = {
+  day: { color: '#101828', bg: '#f7f9fc' },
+  sepia: { color: '#3f2e1d', bg: '#f8eed9' },
+  night: { color: '#e6ebf2', bg: '#14181f' },
+  oled: { color: '#eceff4', bg: '#000000' },
+};
+
+// Reads the live theme palette from globals.css (:root data-theme) so the
+// rendition preview always matches the app chrome. Temporarily swaps the
+// data-theme attribute when it differs from the requested theme.
+export function getEPUBThemeColors(theme: ReadingTheme): {
+  color: string;
+  bg: string;
+} {
+  const fallback = EPUB_THEME_FALLBACK[theme] || EPUB_THEME_FALLBACK.night;
+  if (typeof document === 'undefined') return fallback;
+
+  const docEl = document.documentElement;
+  const previousTheme = docEl.getAttribute('data-theme');
+  if (previousTheme !== theme) {
+    docEl.setAttribute('data-theme', theme);
+  }
+
+  try {
+    const computed = getComputedStyle(docEl);
+    const readVar = (name: string, fb: string) => {
+      const v = computed.getPropertyValue(name).trim();
+      return v || fb;
+    };
+    return {
+      color: readVar('--text-main', fallback.color),
+      bg: readVar('--bg-main', fallback.bg),
+    };
+  } catch {
+    return fallback;
+  } finally {
+    if (previousTheme && previousTheme !== theme) {
+      docEl.setAttribute('data-theme', previousTheme);
+    }
+  }
+}
 
 interface EPUBViewerProps {
   data: ArrayBuffer;
@@ -17,6 +62,8 @@ interface EPUBViewerProps {
   onToggleControls: () => void;
   onNextRef?: React.MutableRefObject<(() => void) | null>;
   onPrevRef?: React.MutableRefObject<(() => void) | null>;
+  onError?: (message?: string) => void;
+  interactionLockRef?: { current: boolean };
 }
 
 export default function EPUBViewer({
@@ -29,11 +76,15 @@ export default function EPUBViewer({
   onToggleControls,
   onNextRef,
   onPrevRef,
+  onError,
+  interactionLockRef,
 }: EPUBViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const bookRef = useRef<EPubBook | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
   // Keep references to dynamic callbacks & initial values so book instance is never destroyed on state update
   const onLocationChangeRef = useRef(onLocationChange);
@@ -42,12 +93,22 @@ export default function EPUBViewer({
   onTOCLoadedRef.current = onTOCLoaded;
   const onToggleControlsRef = useRef(onToggleControls);
   onToggleControlsRef.current = onToggleControls;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+  const interactionLockRefRef = useRef(interactionLockRef);
+  interactionLockRefRef.current = interactionLockRef;
 
   const initialCfiRef = useRef(initialCfi);
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const typographyRef = useRef(typography);
   typographyRef.current = typography;
+
+  const fail = useCallback(() => {
+    setError(true);
+    setLoading(false);
+    onErrorRef.current?.(undefined);
+  }, []);
 
   // Expose next/prev page methods to parent
   useEffect(() => {
@@ -67,23 +128,11 @@ export default function EPUBViewer({
       if (currentTypo.fontFamily === 'cairo') fontFam = "'Cairo', Tahoma, sans-serif";
       if (currentTypo.fontFamily === 'amiri') fontFam = "'Amiri', Georgia, serif";
 
-      let marginPadding = '0 24px';
-      if (currentTypo.margin === 'narrow') marginPadding = '0 8px';
-      if (currentTypo.margin === 'wide') marginPadding = '0 48px';
+      let marginPadding = '0 var(--space-6)';
+      if (currentTypo.margin === 'narrow') marginPadding = '0 var(--space-2)';
+      if (currentTypo.margin === 'wide') marginPadding = '0 var(--space-12)';
 
-      let color = '#e2e8f0';
-      let bg = '#181c24';
-
-      if (currentTheme === 'day') {
-        color = '#0f172a';
-        bg = '#f8fafc';
-      } else if (currentTheme === 'sepia') {
-        color = '#4a3824';
-        bg = '#fbf0d9';
-      } else if (currentTheme === 'oled') {
-        color = '#e5e7eb';
-        bg = '#000000';
-      }
+      const { color, bg } = getEPUBThemeColors(currentTheme);
 
       rendition.themes.default({
         body: {
@@ -111,9 +160,10 @@ export default function EPUBViewer({
 
   // Initialize EPUB Book & Rendition ONCE per data buffer
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || error) return;
     let isMounted = true;
     setLoading(true);
+    setError(false);
 
     let book: EPubBook | null = null;
 
@@ -156,7 +206,7 @@ export default function EPUBViewer({
         })
         .catch((e) => {
           console.warn('Error rendering EPUB:', e);
-          if (isMounted) setLoading(false);
+          if (isMounted) fail();
         });
 
       // Location changed event
@@ -172,6 +222,7 @@ export default function EPUBViewer({
 
       // Tap / Click handling inside EPUB iframe (ReadEra tap zones)
       rendition.on('click', (e: MouseEvent) => {
+        if (interactionLockRefRef.current?.current) return;
         const width = window.innerWidth;
         const x = e.clientX;
         const ratio = x / width;
@@ -186,9 +237,19 @@ export default function EPUBViewer({
 
       // Keyboard navigation
       const handleKey = (e: KeyboardEvent) => {
+        if (interactionLockRefRef.current?.current) return;
+        const target = e.target as HTMLElement;
+        if (
+          target &&
+          (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+        ) {
+          return;
+        }
         if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+          e.preventDefault();
           rendition.next();
         } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+          e.preventDefault();
           rendition.prev();
         }
       };
@@ -203,18 +264,50 @@ export default function EPUBViewer({
       };
     } catch (err) {
       console.error('Failed to initialize EPUB:', err);
-      setLoading(false);
+      if (isMounted) fail();
     }
-  }, [data, applyStylesToRendition]);
+  }, [data, applyStylesToRendition, resetKey]);
+
+  const handleRetry = useCallback(() => {
+    setResetKey((k) => k + 1);
+  }, []);
+
+  if (error) {
+    return (
+      <div className={`${styles.wrapper} ${styles.stateWrap}`}>
+        <div className={styles.errorBadge}>
+          <BookX size={24} />
+        </div>
+        <h1 className={styles.stateTitle}>Couldn&apos;t open this book</h1>
+        <p className={styles.stateMessage}>
+          This book could not be opened. The file may be corrupted or missing.
+        </p>
+        <div className={styles.stateActions}>
+          <a href="/" className={styles.primaryAction}>
+            Go to Library
+          </a>
+          <button type="button" onClick={handleRetry} className={styles.secondaryAction}>
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrapper}>
-      {loading && (
-        <div className={styles.loadingOverlay}>
-          <Loader2 size={36} className={styles.spinner} />
-          <span>Opening EPUB book...</span>
+      <div
+        className={styles.loadingOverlay}
+        style={loading ? undefined : { display: 'none' }}
+        role="status"
+        aria-live="polite"
+      >
+        <div className={styles.loadingBadge}>
+          <BookOpen size={22} className={styles.loadingBookIcon} />
+          <span className={styles.loadingBadgeRing} />
         </div>
-      )}
+        <span className={styles.loadingText}>Opening your book&hellip;</span>
+      </div>
       <div
         ref={containerRef}
         className={styles.viewerContainer}

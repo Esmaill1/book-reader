@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Book, ReadingSession } from '@/types';
-import { BookOpen, ChevronRight } from 'lucide-react';
+import { BookOpen, ChevronRight, Clock } from 'lucide-react';
 import styles from './ReadingNow.module.css';
 
 interface ReadingNowProps {
@@ -15,16 +15,17 @@ export default function ReadingNow({ book, session }: ReadingNowProps) {
   const percent = session ? Math.round(session.progress_percent) : 0;
   const currentPage = session?.current_page || 1;
   const totalPages = book.total_pages || 1;
+  const progressLabel = `Page ${currentPage} of ${totalPages} — ${percent}% complete`;
 
   return (
-    <div className={styles.heroCard}>
-      <div className={styles.coverWrapper}>
+    <section className={styles.heroCard} aria-label="Currently reading">
+      <div className={styles.coverWrapper} aria-hidden="true">
         {book.cover_data_url ? (
           /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={book.cover_data_url} alt={book.title} className={styles.coverImg} />
+          <img src={book.cover_data_url} alt="" className={styles.coverImg} />
         ) : (
           <div className={styles.coverFallback}>
-            <BookOpen size={36} />
+            <BookOpen size={40} />
           </div>
         )}
       </div>
@@ -42,9 +43,17 @@ export default function ReadingNow({ book, session }: ReadingNowProps) {
         <div className={styles.progressSection}>
           <div className={styles.progressLabels}>
             <span>Page {currentPage} of {totalPages}</span>
-            <span>{percent}%</span>
+            <span className={styles.progressPercent}>{percent}%</span>
           </div>
-          <div className={styles.progressBarTrack}>
+          <div
+            role="progressbar"
+            aria-label={`Reading progress for ${book.title}`}
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuetext={progressLabel}
+            className={styles.progressBarTrack}
+          >
             <div className={styles.progressBarFill} style={{ width: `${percent}%` }} />
           </div>
         </div>
@@ -52,15 +61,16 @@ export default function ReadingNow({ book, session }: ReadingNowProps) {
         <div className={styles.bottomAction}>
           <Link href={`/read/${book.id}`} className={styles.continueBtn}>
             <span>Continue Reading</span>
-            <ChevronRight size={18} />
+            <ChevronRight size={18} aria-hidden="true" />
           </Link>
           {session?.last_read_at && (
             <span className={styles.lastReadText}>
+              <Clock size={14} className={styles.lastReadIcon} aria-hidden="true" />
               Last read {new Date(session.last_read_at).toLocaleDateString()}
             </span>
           )}
         </div>
       </div>
-    </div>
+    </section>
   );
 }

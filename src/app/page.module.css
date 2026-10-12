@@ -8,26 +8,134 @@
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: var(--space-8) var(--space-6) var(--space-16);
   flex: 1;
 }
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Section header ---------- */
 
 .sectionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
+  margin-bottom: var(--space-4);
 }
 
 .sectionTitle {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.01em;
   color: var(--text-main);
 }
 
+/* ---------- Skeleton loading state ---------- */
+
+.skeletonHero {
+  display: flex;
+  gap: var(--space-8);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-8);
+}
+
+.skeletonBlock {
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+}
+
+.skeletonHeroCover {
+  flex-shrink: 0;
+  width: 140px;
+  height: 200px;
+}
+
+.skeletonHeroLines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-6);
+}
+
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  padding: var(--space-4);
+  animation: skeletonPulse 1.6s ease-in-out infinite;
+}
+
+.skeletonCover {
+  width: 100%;
+  aspect-ratio: 1 / 1.45;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-elevated);
+  margin-bottom: var(--space-2);
+}
+
+.skeletonLine {
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-elevated);
+}
+
+.skeletonLineWide {
+  height: var(--space-1);
+}
+
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 @media (max-width: 640px) {
   .contentWrapper {
-    padding: 1.25rem 1rem 3rem;
+    padding: var(--space-4) var(--space-4) var(--space-12);
+  }
+
+  .skeletonHero {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .skeletonHeroCover {
+    width: 100px;
+    height: 145px;
+    margin: 0 auto;
+  }
+
+  .skeletonGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
   }
 }

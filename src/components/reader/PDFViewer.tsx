@@ -6,11 +6,60 @@ import { PDFDocumentProxy } from 'pdfjs-dist';
 import { PDFViewSettings, ReadingTheme } from '@/types';
 import { TOCItem } from './TOCDrawer';
 import PDFContinuousView from './PDFContinuousView';
-import { Loader2 } from 'lucide-react';
+import { BookOpen, BookX } from 'lucide-react';
 import styles from './PDFViewer.module.css';
 
 if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+}
+
+export const PDF_PAPER_WHITE = '#ffffff';
+
+export interface PDFThemeSurface {
+  paper: string;
+  canvasFilter: string;
+  blend: 'normal' | 'multiply';
+  shadow: string;
+}
+
+// Single source of truth for PDF page theming. Colors mirror globals.css
+// theme tokens; token values can't be used on canvas pixels so they are kept
+// in one map instead of being scattered across CSS + JS.
+export const PDF_THEME_MAP: Record<ReadingTheme, PDFThemeSurface> = {
+  day: {
+    paper: '#ffffff',
+    canvasFilter: 'none',
+    blend: 'normal',
+    shadow: '0 var(--space-2) var(--space-6) rgba(16, 24, 40, 0.18)',
+  },
+  sepia: {
+    paper: '#fbf0d9',
+    canvasFilter: 'sepia(0.68) contrast(0.92) brightness(0.96)',
+    blend: 'multiply',
+    shadow: '0 var(--space-2) var(--space-6) rgba(74, 56, 36, 0.22)',
+  },
+  night: {
+    paper: '#181c24',
+    canvasFilter: 'invert(0.88) hue-rotate(180deg) contrast(0.95) brightness(0.92)',
+    blend: 'normal',
+    shadow: '0 var(--space-2) var(--space-6) rgba(0, 0, 0, 0.65)',
+  },
+  oled: {
+    paper: '#000000',
+    canvasFilter: 'invert(1) hue-rotate(180deg) contrast(1.08) brightness(0.96)',
+    blend: 'normal',
+    shadow: '0 var(--space-2) var(--space-6) rgba(0, 0, 0, 0.9)',
+  },
+};
+
+export function getPdfThemeSurface(
+  theme: ReadingTheme,
+  colorMode?: 'match-theme' | 'original'
+): PDFThemeSurface {
+  if (colorMode === 'original') {
+    return { ...PDF_THEME_MAP.day, canvasFilter: 'none', blend: 'normal' };
+  }
+  return PDF_THEME_MAP[theme] || PDF_THEME_MAP.night;
 }
 
 interface PDFViewerProps {
@@ -26,6 +75,8 @@ interface PDFViewerProps {
   onNextPage?: () => void;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
+  onError?: (message?: string) => void;
+  interactionLockRef?: { current: boolean };
 }
 
 export default function PDFViewer({
@@ -41,10 +92,14 @@ export default function PDFViewer({
   onNextPage,
   onZoomIn,
   onZoomOut,
+  onError,
+  interactionLockRef,
 }: PDFViewerProps) {
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -65,14 +120,20 @@ export default function PDFViewer({
   onPrevPageRef.current = onPrevPage;
   const onNextPageRef = useRef(onNextPage);
   onNextPageRef.current = onNextPage;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+  const interactionLockRefRef = useRef(interactionLockRef);
+  interactionLockRefRef.current = interactionLockRef;
 
   const initialPageRef = useRef(initialPage);
   const hasReportedInitialPageRef = useRef(false);
 
   // Load PDF Document ONCE per data buffer
   useEffect(() => {
+    if (error) return;
     let isMounted = true;
     setLoading(true);
+    setError(false);
 
     const bufferCopy = data.slice(0);
     const loadTask = pdfjsLib.getDocument({ data: bufferCopy });
@@ -99,7 +160,10 @@ export default function PDFViewer({
               let targetPage: number | undefined;
               if (item.dest) {
                 try {
-                  const destRef = typeof item.dest === 'string' ? await doc.getDestination(item.dest) : item.dest;
+                  const destRef =
+                    typeof item.dest === 'string'
+                      ? await doc.getDestination(item.dest)
+                      : item.dest;
                   if (destRef && destRef[0]) {
                     const pageIndex = await doc.getPageIndex(destRef[0]);
                     targetPage = pageIndex + 1;
@@ -123,7 +187,11 @@ export default function PDFViewer({
           return;
         }
         console.error('Error loading PDF document:', err);
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setError(true);
+          setLoading(false);
+          onErrorRef.current?.(undefined);
+        }
       });
 
     return () => {
@@ -132,7 +200,7 @@ export default function PDFViewer({
         loadTask.destroy();
       } catch {}
     };
-  }, [data]);
+  }, [data, resetKey]);
 
   // Double-Buffered, Flicker-Free Single Page Render
   const renderSinglePage = useCallback(
@@ -177,7 +245,10 @@ export default function PDFViewer({
           scale = Math.min(scaleW, scaleH);
         } else {
           // Custom zoom relative to optimal fit
-          const baseScale = Math.min(availWidth / unscaledViewport.width, availHeight / unscaledViewport.height);
+          const baseScale = Math.min(
+            availWidth / unscaledViewport.width,
+            availHeight / unscaledViewport.height
+          );
           scale = baseScale * (settings.customZoom || 1.0);
         }
 
@@ -194,7 +265,7 @@ export default function PDFViewer({
           return;
         }
 
-        offscreenCtx.fillStyle = '#ffffff';
+        offscreenCtx.fillStyle = PDF_PAPER_WHITE;
         offscreenCtx.fillRect(0, 0, viewport.width, viewport.height);
 
         const renderContext = {
@@ -287,7 +358,16 @@ export default function PDFViewer({
     if (settings.scrollMode !== 'single') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (interactionLockRefRef.current?.current) return;
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
+        return;
+      }
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
         if (currentPage < totalPages) {
           if (onNextPageRef.current) {
             onNextPageRef.current();
@@ -296,6 +376,7 @@ export default function PDFViewer({
           }
         }
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
         if (currentPage > 1) {
           if (onPrevPageRef.current) {
             onPrevPageRef.current();
@@ -311,6 +392,7 @@ export default function PDFViewer({
 
   // ReadEra-style Tap zones in single mode
   const handleSingleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (interactionLockRefRef.current?.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const ratio = x / rect.width;
@@ -336,11 +418,41 @@ export default function PDFViewer({
     }
   };
 
+  const handleRetry = useCallback(() => {
+    setResetKey((k) => k + 1);
+  }, []);
+
   if (loading) {
     return (
-      <div className={styles.loadingOverlay}>
-        <Loader2 size={36} className={styles.spinner} />
-        <span>Opening PDF document...</span>
+      <div className={styles.loadingOverlay} role="status" aria-live="polite">
+        <div className={styles.loadingBadge}>
+          <BookOpen size={24} className={styles.loadingBookIcon} aria-hidden="true" />
+          <span className={styles.loadingBadgeRing} />
+        </div>
+        <span className={styles.loadingText}>Opening your book&hellip;</span>
+        <div className={styles.loadingSkeleton} aria-hidden="true" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`${styles.singleContainer} ${styles.stateWrap}`}>
+        <div className={styles.errorBadge}>
+          <BookX size={24} aria-hidden="true" />
+        </div>
+        <h1 className={styles.stateTitle}>Couldn&apos;t open this book</h1>
+        <p className={styles.stateMessage}>
+          This book could not be opened. The file may be corrupted or missing.
+        </p>
+        <div className={styles.stateActions}>
+          <a href="/" className={styles.primaryAction}>
+            Go to Library
+          </a>
+          <button type="button" onClick={handleRetry} className={styles.secondaryAction}>
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
@@ -363,10 +475,7 @@ export default function PDFViewer({
   }
 
   // 2. Single Page Mode
-  const activeThemeClass =
-    settings.colorMode === 'original'
-      ? styles.day
-      : styles[theme] || styles.night;
+  const surface = getPdfThemeSurface(theme, settings.colorMode);
 
   return (
     <div
@@ -376,10 +485,17 @@ export default function PDFViewer({
       onClick={handleSingleContainerClick}
     >
       <div
-        className={`${styles.pageWrapper} ${activeThemeClass}`}
-        style={{ display: 'block' }}
+        className={styles.pageWrapper}
+        style={{
+          background: surface.paper,
+          boxShadow: surface.shadow,
+        }}
       >
-        <canvas ref={canvasRef} className={styles.pdfCanvas} />
+        <canvas
+          ref={canvasRef}
+          className={styles.pdfCanvas}
+          style={{ filter: surface.canvasFilter, mixBlendMode: surface.blend }}
+        />
       </div>
     </div>
   );

@@ -3,16 +3,24 @@
 import dynamicImport from 'next/dynamic';
 import { use, Suspense } from 'react';
 import styles from './page.module.css';
-import { Loader2 } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
+
+function BrandedLoading() {
+  return (
+    <div className={styles.centerState} role="status" aria-live="polite">
+      <div className={styles.loadingBadge} aria-hidden="true">
+        <BookOpen size={26} className={styles.loadingBookIcon} />
+        <span className={styles.loadingBadgeRing} />
+      </div>
+      <p className={styles.loadingText}>Opening your book&hellip;</p>
+      <div className={styles.skeletonBar} aria-hidden="true" />
+    </div>
+  );
+}
 
 const ReaderClient = dynamicImport(() => import('./ReaderClient'), {
   ssr: false,
-  loading: () => (
-    <div className={styles.centerState}>
-      <Loader2 size={40} className={styles.spinner} />
-      <p>Initializing Book Reader...</p>
-    </div>
-  ),
+  loading: () => <BrandedLoading />,
 });
 
 function ReaderContent({ params }: { params: Promise<{ bookId: string }> }) {
@@ -26,14 +34,7 @@ interface PageProps {
 
 export default function Page({ params }: PageProps) {
   return (
-    <Suspense
-      fallback={
-        <div className={styles.centerState}>
-          <Loader2 size={40} className={styles.spinner} />
-          <p>Loading reader...</p>
-        </div>
-      }
-    >
+    <Suspense fallback={<BrandedLoading />}>
       <ReaderContent params={params} />
     </Suspense>
   );

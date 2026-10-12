@@ -1,95 +1,177 @@
-@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap');
+/* ============================================================
+   BookEra — Design Token Foundation
+   4 themes: day, sepia, night (default), oled — via [data-theme]
+   Fonts are loaded via next/font (see layout.tsx) and exposed as
+   --font-inter / --font-merriweather / --font-cairo / --font-amiri,
+   mapped to the legacy names (--font-sans / --font-serif / --font-arabic).
+   ============================================================ */
 
+/* ---------- Core font stacks (legacy names preserved) ---------- */
 :root {
-  /* Default: Night theme (ReadEra signature dark) */
-  --bg-main: #181c24;
-  --bg-surface: #222733;
-  --bg-surface-elevated: #2c3342;
-  --bg-surface-glass: rgba(34, 39, 51, 0.88);
-  --text-main: #e2e8f0;
-  --text-muted: #94a3b8;
-  --border-color: #333c4d;
-  --border-subtle: #252b38;
-  --accent: #38bdf8;
-  --accent-hover: #0ea5e9;
-  --accent-rgb: 56, 189, 248;
-  --accent-glow: rgba(56, 189, 248, 0.15);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
-  
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-arabic: 'Cairo', 'Amiri', Tahoma, sans-serif;
-  --font-serif: 'Merriweather', 'Amiri', Georgia, serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  --font-arabic: var(--font-cairo), var(--font-amiri), Tahoma, sans-serif;
+  --font-serif: var(--font-merriweather), Georgia, serif;
+
+  /* ---------- Layout tokens (theme-independent) ---------- */
+  /* Spacing scale: 4px base, steps 1–16 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-11: 44px;
+  --space-12: 48px;
+  --space-13: 52px;
+  --space-14: 56px;
+  --space-15: 60px;
+  --space-16: 64px;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Typography scale */
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Motion */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Accessibility */
+  --touch-target: 44px;
+
+  /* Scrollbar (refined per theme below) */
+  --scrollbar-width: 8px;
 }
 
+/* ---------- Default: Night theme ---------- */
+:root,
+[data-theme="night"] {
+  color-scheme: dark;
+
+  --bg-main: #14181f;
+  --bg-surface: #1e242f;
+  --bg-surface-elevated: #293240;
+  --bg-surface-glass: rgba(30, 36, 47, 0.88);
+  --text-main: #e6ebf2;
+  --text-muted: #9aa7bb;
+  --border-color: #35404f;
+  --border-subtle: #232b36;
+  --accent: #38bdf8;
+  --accent-hover: #7cc9fb;
+  --accent-rgb: 56, 189, 248;
+  --accent-glow: rgba(56, 189, 248, 0.16);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+
+  --color-danger: #f87171;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+
+  --scrollbar-thumb: #35404f;
+  --scrollbar-thumb-hover: #9aa7bb;
+}
+
+/* ---------- Day theme ---------- */
 [data-theme="day"] {
-  --bg-main: #f8fafc;
+  color-scheme: light;
+
+  --bg-main: #f7f9fc;
   --bg-surface: #ffffff;
-  --bg-surface-elevated: #f1f5f9;
-  --bg-surface-glass: rgba(255, 255, 255, 0.9);
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --border-color: #e2e8f0;
-  --border-subtle: #f1f5f9;
+  --bg-surface-elevated: #eef2f7;
+  --bg-surface-glass: rgba(255, 255, 255, 0.92);
+  --text-main: #101828;
+  --text-muted: #55647a;
+  --border-color: #dce3ec;
+  --border-subtle: #e8edf4;
   --accent: #2563eb;
-  --accent-hover: #1d4ed8;
+  --accent-hover: #1e40af;
   --accent-rgb: 37, 99, 235;
   --accent-glow: rgba(37, 99, 235, 0.12);
-  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
-  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+  --shadow-sm: 0 2px 8px rgba(16, 24, 40, 0.06);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12);
+
+  --color-danger: #b91c1c;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+
+  --scrollbar-thumb: #c3ccd9;
+  --scrollbar-thumb-hover: #55647a;
 }
 
+/* ---------- Sepia theme (contrast-tuned) ---------- */
 [data-theme="sepia"] {
-  --bg-main: #fbf0d9;
-  --bg-surface: #f4e5c3;
-  --bg-surface-elevated: #ecdbb4;
-  --bg-surface-glass: rgba(244, 229, 195, 0.92);
-  --text-main: #4a3824;
-  --text-muted: #856a4b;
-  --border-color: #dfcca0;
-  --border-subtle: #e9d9b4;
-  --accent: #b45309;
-  --accent-hover: #92400e;
-  --accent-rgb: 180, 83, 9;
-  --accent-glow: rgba(180, 83, 9, 0.15);
-  --shadow-sm: 0 2px 8px rgba(74, 56, 36, 0.08);
-  --shadow-lg: 0 10px 28px rgba(74, 56, 36, 0.14);
+  color-scheme: light;
+
+  --bg-main: #f8eed9;
+  --bg-surface: #f2e3c2;
+  --bg-surface-elevated: #e9d6ad;
+  --bg-surface-glass: rgba(242, 227, 194, 0.92);
+  --text-main: #3f2e1d;
+  --text-muted: #6f5533;
+  --border-color: #d9c294;
+  --border-subtle: #e4d2ab;
+  --accent: #9a4a06;
+  --accent-hover: #7f3b05;
+  --accent-rgb: 154, 74, 6;
+  --accent-glow: rgba(154, 74, 6, 0.14);
+  --shadow-sm: 0 2px 8px rgba(63, 46, 29, 0.08);
+  --shadow-lg: 0 10px 28px rgba(63, 46, 29, 0.16);
+
+  --color-danger: #a22f2f;
+  --color-success: #2e7d32;
+  --color-warning: #a16207;
+
+  --scrollbar-thumb: #cbb386;
+  --scrollbar-thumb-hover: #6f5533;
 }
 
-[data-theme="night"] {
-  --bg-main: #181c24;
-  --bg-surface: #222733;
-  --bg-surface-elevated: #2c3342;
-  --bg-surface-glass: rgba(34, 39, 51, 0.88);
-  --text-main: #e2e8f0;
-  --text-muted: #94a3b8;
-  --border-color: #333c4d;
-  --border-subtle: #252b38;
-  --accent: #38bdf8;
-  --accent-hover: #0ea5e9;
-  --accent-rgb: 56, 189, 248;
-  --accent-glow: rgba(56, 189, 248, 0.15);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
-}
-
+/* ---------- OLED theme (true black) ---------- */
 [data-theme="oled"] {
+  color-scheme: dark;
+
   --bg-main: #000000;
-  --bg-surface: #101012;
+  --bg-surface: #0f0f12;
   --bg-surface-elevated: #1a1a1e;
-  --bg-surface-glass: rgba(16, 16, 18, 0.95);
-  --text-main: #e5e7eb;
-  --text-muted: #9ca3af;
-  --border-color: #26262a;
-  --border-subtle: #18181c;
+  --bg-surface-glass: rgba(15, 15, 18, 0.95);
+  --text-main: #eceff4;
+  --text-muted: #a5adba;
+  --border-color: #26262b;
+  --border-subtle: #17171b;
   --accent: #38bdf8;
-  --accent-hover: #0284c7;
+  --accent-hover: #7cc9fb;
   --accent-rgb: 56, 189, 248;
-  --accent-glow: rgba(56, 189, 248, 0.12);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.85);
+  --accent-glow: rgba(56, 189, 248, 0.14);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.9);
+
+  --color-danger: #f87171;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+
+  --scrollbar-thumb: #26262b;
+  --scrollbar-thumb-hover: #a5adba;
 }
 
+/* ---------- Reset ---------- */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -97,52 +179,98 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+/* ---------- Base ---------- */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
   width: 100%;
   height: 100%;
   overflow-x: hidden;
   background-color: var(--bg-main);
   color: var(--text-main);
   font-family: var(--font-sans);
-  transition: background-color 0.2s ease, color 0.2s ease;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition-base), color var(--transition-base);
 }
 
-/* Custom Scrollbars */
+/* Focus visibility — never remove outlines */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Scrollbars ---------- */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 9999px;
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background-color: var(--scrollbar-thumb-hover);
 }
 
-/* Reader Typography Classes */
-.font-sans { font-family: var(--font-sans); }
-.font-arabic { font-family: var(--font-arabic); }
-.font-serif { font-family: var(--font-serif); }
+/* Firefox */
+html {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-width: thin;
+}
 
+/* ---------- Controls ---------- */
 button {
   cursor: pointer;
   border: none;
   background: transparent;
   color: inherit;
-  font-family: inherit;
+  font: inherit;
 }
 
-input, select, textarea {
-  font-family: inherit;
+input,
+select,
+textarea {
+  font: inherit;
 }
 
-/* Glassmorphism helpers */
+/* ---------- Reader typography classes (legacy names preserved) ---------- */
+.font-sans {
+  font-family: var(--font-sans);
+}
+.font-arabic {
+  font-family: var(--font-arabic);
+}
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+/* ---------- Glassmorphism helper ---------- */
 .glass-panel {
   background: var(--bg-surface-glass);
   backdrop-filter: blur(16px);

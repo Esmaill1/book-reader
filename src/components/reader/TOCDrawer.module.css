@@ -6,7 +6,7 @@
   z-index: 50;
   display: flex;
   justify-content: flex-start;
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn var(--transition-base) both;
 }
 
 .drawer {
@@ -18,33 +18,35 @@
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1.25rem;
-  animation: slideRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  animation: slideRight var(--transition-base) both;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .title {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
   color: var(--text-main);
 }
 
 .closeBtn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.35rem;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: var(--radius-md);
   color: var(--text-muted);
+  flex-shrink: 0;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .closeBtn:hover {
@@ -53,23 +55,38 @@
 }
 
 .list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+.items {
+  list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  overflow-y: auto;
-  flex: 1;
+  gap: var(--space-1);
+}
+
+.listRow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 0.85rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--text-main);
   text-align: left;
-  transition: all 0.15s ease;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .item:hover {
@@ -84,19 +101,34 @@
   flex: 1;
 }
 
+.itemPage {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .empty {
-  padding: 3rem 1rem;
+  padding: var(--space-12) var(--space-4);
   text-align: center;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideRight {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }

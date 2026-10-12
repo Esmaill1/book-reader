@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Book,
@@ -28,8 +28,16 @@ import TOCDrawer, { TOCItem } from '@/components/reader/TOCDrawer';
 import BookmarksDrawer from '@/components/reader/BookmarksDrawer';
 import PDFViewer from '@/components/reader/PDFViewer';
 import EPUBViewer from '@/components/reader/EPUBViewer';
-import { Loader2 } from 'lucide-react';
+import { BookX, BookOpen } from 'lucide-react';
 import styles from './page.module.css';
+
+const MIN_FONT_SIZE = 12;
+const MAX_FONT_SIZE = 36;
+const DEFAULT_FONT_SIZE = 18;
+const FONT_STEP = 2;
+
+const ERROR_OPEN_MESSAGE =
+  'This book could not be opened. The file may be corrupted or missing.';
 
 interface ReaderClientProps {
   bookId: string;
@@ -40,6 +48,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
   const [fileData, setFileData] = useState<ArrayBuffer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   // Chrome & Drawers visibility
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -62,11 +71,14 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
   const epubNextRef = useRef<(() => void) | null>(null);
   const epubPrevRef = useRef<(() => void) | null>(null);
 
+  // Shared interaction lock for the viewers (keyboard / tap navigation pauses while a drawer is open)
+  const interactionLockRef = useRef<boolean>(false);
+
   // Reader Settings
   const [settings, setSettings] = useState<ReaderSettings>({
     theme: 'night',
     typography: {
-      fontSize: 18,
+      fontSize: DEFAULT_FONT_SIZE,
       lineHeight: 1.6,
       fontFamily: 'sans',
       margin: 'normal',
@@ -87,6 +99,22 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
     initialCfi: currentCfi,
     totalPages,
   });
+
+  const isReaderBlocked =
+    isSettingsOpen || isTOCOpen || isBookmarksOpen;
+
+  // Keep the lock ref in sync (checked inside viewer key handlers)
+  interactionLockRef.current = isReaderBlocked;
+
+  const handleRetry = useCallback(() => {
+    setError(null);
+    setRetryNonce((n) => n + 1);
+  }, []);
+
+  const handleViewerError = useCallback((message?: string) => {
+    setError(message || ERROR_OPEN_MESSAGE);
+    setLoading(false);
+  }, []);
 
   // Load Book & Session
   useEffect(() => {
@@ -120,7 +148,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
         if (!isMounted) return;
 
         if (!bookMeta || !bookBinary) {
-          setError('Book file not found in local storage or cloud.');
+          setError(ERROR_OPEN_MESSAGE);
           setLoading(false);
           return;
         }
@@ -154,7 +182,9 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
 
         setCurrentPage(activePage);
         setCurrentCfi(activeCfi);
-        setPercent(Math.round((activePage / Math.max(1, bookMeta.total_pages || 1)) * 100));
+        setPercent(
+          Math.round((activePage / Math.max(1, bookMeta.total_pages || 1)) * 100)
+        );
 
         // 4. Load saved bookmarks
         const savedAnnotations = await getLocalAnnotationsForBook(bookId);
@@ -179,9 +209,8 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
 
         setLoading(false);
       } catch (err: any) {
-        console.error('Failed to initialize reader:', err);
         if (isMounted) {
-          setError(err?.message || 'Error opening book');
+          setError(err?.message || ERROR_OPEN_MESSAGE);
           setLoading(false);
         }
       }
@@ -192,7 +221,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
     return () => {
       isMounted = false;
     };
-  }, [bookId]);
+  }, [bookId, retryNonce]);
 
   // Persist settings changes
   const handleUpdateSettings = useCallback(
@@ -242,6 +271,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
 
   // Next / Prev actions
   const handleNextPage = useCallback(() => {
+    if (interactionLockRef.current) return;
     if (book?.format === 'pdf') {
       if (currentPage < totalPages) {
         handlePDFPageChange(currentPage + 1, totalPages);
@@ -252,6 +282,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
   }, [book?.format, currentPage, totalPages, handlePDFPageChange]);
 
   const handlePrevPage = useCallback(() => {
+    if (interactionLockRef.current) return;
     if (book?.format === 'pdf') {
       if (currentPage > 1) {
         handlePDFPageChange(currentPage - 1, totalPages);
@@ -268,7 +299,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
         ...prev,
         typography: {
           ...prev.typography,
-          fontSize: Math.min(36, prev.typography.fontSize + 2),
+          fontSize: Math.min(MAX_FONT_SIZE, prev.typography.fontSize + FONT_STEP),
         },
       }));
     } else {
@@ -293,7 +324,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
         ...prev,
         typography: {
           ...prev.typography,
-          fontSize: Math.max(12, prev.typography.fontSize - 2),
+          fontSize: Math.max(MIN_FONT_SIZE, prev.typography.fontSize - FONT_STEP),
         },
       }));
     } else {
@@ -318,7 +349,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
         ...prev,
         typography: {
           ...prev.typography,
-          fontSize: 18,
+          fontSize: DEFAULT_FONT_SIZE,
         },
       }));
     } else {
@@ -336,7 +367,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
     }
   }, [book?.format]);
 
-  const zoomDisplay = useMemo(() => {
+  const zoomDisplay = React.useMemo(() => {
     if (book?.format === 'epub') {
       return `${settings.typography.fontSize}px`;
     }
@@ -350,7 +381,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
     settings.typography.fontSize,
   ]);
 
-  // Global Keyboard Shortcuts (+/-/0)
+  // Global Keyboard Shortcuts (+/-/0) + Escape (chrome toggle / drawer dismiss)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -362,6 +393,24 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
       ) {
         return;
       }
+
+      if (e.key === 'Escape') {
+        if (isBookmarksOpen) {
+          e.preventDefault();
+          setIsBookmarksOpen(false);
+        } else if (isTOCOpen) {
+          e.preventDefault();
+          setIsTOCOpen(false);
+        } else if (isSettingsOpen) {
+          e.preventDefault();
+          setIsSettingsOpen(false);
+        } else {
+          setControlsVisible((v) => !v);
+        }
+        return;
+      }
+
+      if (interactionLockRef.current) return;
 
       if (e.key === '+' || e.key === '=') {
         e.preventDefault();
@@ -377,7 +426,14 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleZoomIn, handleZoomOut, handleZoomReset]);
+  }, [
+    handleZoomIn,
+    handleZoomOut,
+    handleZoomReset,
+    isSettingsOpen,
+    isTOCOpen,
+    isBookmarksOpen,
+  ]);
 
   // Bookmark actions
   const isCurrentPageBookmarked = bookmarks.some(
@@ -385,6 +441,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
   );
 
   const handleToggleBookmark = async () => {
+    if (interactionLockRef.current) return;
     if (isCurrentPageBookmarked) {
       const existing = bookmarks.find(
         (bm) => bm.location_page === currentPage || (currentCfi && bm.location_cfi === currentCfi)
@@ -430,26 +487,57 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
 
   if (loading) {
     return (
-      <div className={styles.centerState}>
-        <Loader2 size={40} className={styles.spinner} />
-        <p>Opening book in reader...</p>
+      <div
+        className={styles.centerState}
+        role="status"
+        aria-live="polite"
+      >
+        <div className={styles.loadingBadge}>
+          <BookOpen size={26} className={styles.loadingBookIcon} aria-hidden="true" />
+          <span className={styles.loadingBadgeRing} aria-hidden="true" />
+        </div>
+        <p className={styles.loadingText}>Opening your book&hellip;</p>
+        <div className={styles.skeletonBar} aria-hidden="true" />
       </div>
     );
   }
 
   if (error || !book || !fileData) {
     return (
-      <div className={styles.centerState}>
-        <p>{error || 'Unable to open book.'}</p>
-        <Link href="/" className={styles.backHomeBtn}>
-          Back to Library
-        </Link>
+      <div
+        className={styles.errorState}
+        role="region"
+        aria-label="Reading error"
+      >
+        <div className={styles.errorBadge}>
+          <BookX size={26} />
+        </div>
+        <h1 className={styles.errorTitle}>Couldn&apos;t open this book</h1>
+        <p className={styles.errorMessage}>
+          {error || ERROR_OPEN_MESSAGE}
+        </p>
+        <div className={styles.errorActions}>
+          <Link href="/" className={styles.primaryAction}>
+            Go to Library
+          </Link>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className={styles.secondaryAction}
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.readerContainer}>
+    <div
+      className={styles.readerContainer}
+      role="region"
+      aria-label="Book reader"
+    >
       <ReaderChrome
         visible={controlsVisible}
         bookTitle={book.title}
@@ -486,6 +574,8 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
           onNextPage={handleNextPage}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
+          onError={handleViewerError}
+          interactionLockRef={interactionLockRef}
         />
       ) : (
         <EPUBViewer
@@ -498,6 +588,8 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
           onToggleControls={handleToggleControls}
           onNextRef={epubNextRef}
           onPrevRef={epubPrevRef}
+          onError={handleViewerError}
+          interactionLockRef={interactionLockRef}
         />
       )}
 

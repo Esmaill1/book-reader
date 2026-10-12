@@ -6,7 +6,7 @@
   z-index: 50;
   display: flex;
   justify-content: flex-end;
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn var(--transition-base) both;
 }
 
 .drawer {
@@ -18,33 +18,35 @@
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1.25rem;
-  animation: slideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  animation: slideLeft var(--transition-base) both;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .title {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
   color: var(--text-main);
 }
 
 .closeBtn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.35rem;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: var(--radius-md);
   color: var(--text-muted);
+  flex-shrink: 0;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .closeBtn:hover {
@@ -53,83 +55,155 @@
 }
 
 .list {
+  flex: 1;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  overflow-y: auto;
-  flex: 1;
+  gap: var(--space-2);
+  padding: var(--space-4);
 }
 
 .item {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
-  padding: 0.75rem 0.85rem;
+  gap: var(--space-2);
+  padding: var(--space-1);
   background: var(--bg-surface-elevated);
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  transition: all 0.15s ease;
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
 }
 
 .item:hover {
-  border-color: var(--accent);
+  border-color: rgba(var(--accent-rgb), 0.5);
 }
 
 .itemClickable {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-3);
   text-align: left;
   flex: 1;
-  background: none;
-  border: none;
+  border-radius: var(--radius-sm);
   color: inherit;
-  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.itemClickable:hover {
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.06);
 }
 
 .itemPage {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-main);
 }
 
 .itemDate {
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
   color: var(--text-muted);
 }
 
 .deleteBtn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.35rem;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: var(--radius-md);
   color: var(--text-muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  flex-shrink: 0;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
-.deleteBtn:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+.deleteBtn:hover,
+.deleteBtn:focus-visible {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+}
+
+.confirmArea {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-2);
+}
+
+.confirmText {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+}
+
+.confirmDeleteBtn {
+  flex: 1;
+  min-height: var(--space-10);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-danger);
+  color: var(--bg-surface);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  transition: filter var(--transition-fast);
+}
+
+.confirmDeleteBtn:hover {
+  filter: brightness(1.1);
+}
+
+.confirmCancelBtn {
+  min-height: var(--space-10);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.confirmCancelBtn:hover {
+  color: var(--text-main);
+  background: var(--bg-surface);
 }
 
 .empty {
-  padding: 3rem 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-10) var(--space-6);
   text-align: center;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
+}
+
+.emptyIcon {
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideLeft {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
