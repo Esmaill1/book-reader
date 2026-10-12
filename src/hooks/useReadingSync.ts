@@ -1,0 +1,105 @@
+'use client';
+
+import { useEffect, useRef, useCallback } from 'react';
+import { ReadingSession } from '@/types';
+import { saveLocalSession } from '@/lib/db';
+import { syncSessionToCloud, isCloudConfigured } from '@/lib/supabase';
+
+interface UseReadingSyncProps {
+  bookId: string;
+  initialPage?: number;
+  initialCfi?: string;
+  totalPages?: number;
+}
+
+export function useReadingSync({
+  bookId,
+  initialPage = 1,
+  initialCfi,
+  totalPages = 1,
+}: UseReadingSyncProps) {
+  const currentSessionRef = useRef<ReadingSession>({
+    id: bookId,
+    book_id: bookId,
+    current_page: initialPage,
+    current_cfi: initialCfi,
+    progress_percent: Math.min(100, Math.round((initialPage / Math.max(1, totalPages)) * 100)),
+    last_read_at: new Date().toISOString(),
+  });
+
+  const syncTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Flush function to save to Local DB and Cloud
+  const flushSync = useCallback(async (sessionToSync: ReadingSession) => {
+    try {
+      // 1. Always save locally immediately
+      await saveLocalSession(sessionToSync);
+
+      // 2. If cloud is available, push to Supabase
+      if (isCloudConfigured()) {
+        await syncSessionToCloud(sessionToSync);
+      }
+    } catch (err) {
+      console.warn('Error flushing reading session:', err);
+    }
+  }, []);
+
+  // Update position with 3-second debounce
+  const updateProgress = useCallback(
+    (page: number, cfi?: string, total: number = totalPages) => {
+      const percent = Math.min(100, Math.max(0, Math.round((page / Math.max(1, total)) * 100)));
+
+      const updated: ReadingSession = {
+        id: bookId,
+        book_id: bookId,
+        current_page: page,
+        current_cfi: cfi,
+        progress_percent: percent,
+        last_read_at: new Date().toISOString(),
+      };
+
+      currentSessionRef.current = updated;
+
+      // Reset debounce timer
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+      }
+
+      syncTimerRef.current = setTimeout(() => {
+        flushSync(updated);
+      }, 2500);
+    },
+    [bookId, totalPages, flushSync]
+  );
+
+  // Lifecycle flush: flush when user switches tabs or navigates away
+  useEffect(() => {
+    const handleVisibilityOrLeave = () => {
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+      }
+      flushSync(currentSessionRef.current);
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityOrLeave);
+    window.addEventListener('pagehide', handleVisibilityOrLeave);
+    window.addEventListener('beforeunload', handleVisibilityOrLeave);
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityOrLeave);
+      window.removeEventListener('pagehide', handleVisibilityOrLeave);
+      window.removeEventListener('beforeunload', handleVisibilityOrLeave);
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+      }
+      // flush on unmount
+      flushSync(currentSessionRef.current);
+    };
+  }, [flushSync]);
+
+  return {
+    updateProgress,
+    currentSessionRef,
+    flushSync,
+  };
+}

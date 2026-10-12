@@ -1,0 +1,16 @@
+{
+  "name": "BookEra Web",
+  "short_name": "BookEra",
+  "description": "Personal Cloud Book Reader for PDF & EPUB",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#181c24",
+  "theme_color": "#181c24",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

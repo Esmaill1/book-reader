@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap');
+
+:root {
+  /* Default: Night theme (ReadEra signature dark) */
+  --bg-main: #181c24;
+  --bg-surface: #222733;
+  --bg-surface-elevated: #2c3342;
+  --bg-surface-glass: rgba(34, 39, 51, 0.88);
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border-color: #333c4d;
+  --border-subtle: #252b38;
+  --accent: #38bdf8;
+  --accent-hover: #0ea5e9;
+  --accent-rgb: 56, 189, 248;
+  --accent-glow: rgba(56, 189, 248, 0.15);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-arabic: 'Cairo', 'Amiri', Tahoma, sans-serif;
+  --font-serif: 'Merriweather', 'Amiri', Georgia, serif;
+}
+
+[data-theme="day"] {
+  --bg-main: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f1f5f9;
+  --bg-surface-glass: rgba(255, 255, 255, 0.9);
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-rgb: 37, 99, 235;
+  --accent-glow: rgba(37, 99, 235, 0.12);
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="sepia"] {
+  --bg-main: #fbf0d9;
+  --bg-surface: #f4e5c3;
+  --bg-surface-elevated: #ecdbb4;
+  --bg-surface-glass: rgba(244, 229, 195, 0.92);
+  --text-main: #4a3824;
+  --text-muted: #856a4b;
+  --border-color: #dfcca0;
+  --border-subtle: #e9d9b4;
+  --accent: #b45309;
+  --accent-hover: #92400e;
+  --accent-rgb: 180, 83, 9;
+  --accent-glow: rgba(180, 83, 9, 0.15);
+  --shadow-sm: 0 2px 8px rgba(74, 56, 36, 0.08);
+  --shadow-lg: 0 10px 28px rgba(74, 56, 36, 0.14);
+}
+
+[data-theme="night"] {
+  --bg-main: #181c24;
+  --bg-surface: #222733;
+  --bg-surface-elevated: #2c3342;
+  --bg-surface-glass: rgba(34, 39, 51, 0.88);
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border-color: #333c4d;
+  --border-subtle: #252b38;
+  --accent: #38bdf8;
+  --accent-hover: #0ea5e9;
+  --accent-rgb: 56, 189, 248;
+  --accent-glow: rgba(56, 189, 248, 0.15);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="oled"] {
+  --bg-main: #000000;
+  --bg-surface: #101012;
+  --bg-surface-elevated: #1a1a1e;
+  --bg-surface-glass: rgba(16, 16, 18, 0.95);
+  --text-main: #e5e7eb;
+  --text-muted: #9ca3af;
+  --border-color: #26262a;
+  --border-subtle: #18181c;
+  --accent: #38bdf8;
+  --accent-hover: #0284c7;
+  --accent-rgb: 56, 189, 248;
+  --accent-glow: rgba(56, 189, 248, 0.12);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.85);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Reader Typography Classes */
+.font-sans { font-family: var(--font-sans); }
+.font-arabic { font-family: var(--font-arabic); }
+.font-serif { font-family: var(--font-serif); }
+
+button {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+}
+
+input, select, textarea {
+  font-family: inherit;
+}
+
+/* Glassmorphism helpers */
+.glass-panel {
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+}
