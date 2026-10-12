@@ -48,6 +48,7 @@ export interface PDFViewSettings {
   scrollMode: 'continuous' | 'single';
   zoomMode: 'fit-width' | 'fit-page' | 'custom';
   customZoom: number;     // e.g. 1.0, 1.25, 1.5
+  colorMode?: 'match-theme' | 'original';
 }
 
 export interface ReaderSettings {

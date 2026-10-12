@@ -262,6 +262,40 @@ export default function SettingsDrawer({
                 </button>
               </div>
             </div>
+
+            <div className={styles.section}>
+              <span className={styles.sectionLabel}>PDF Page Appearance</span>
+              <div className={styles.buttonGroup}>
+                <button
+                  onClick={() =>
+                    onUpdateSettings((prev) => ({
+                      ...prev,
+                      pdfView: { ...prev.pdfView, colorMode: 'match-theme' },
+                    }))
+                  }
+                  className={`${styles.groupBtn} ${
+                    (!settings.pdfView.colorMode || settings.pdfView.colorMode === 'match-theme')
+                      ? styles.active
+                      : ''
+                  }`}
+                >
+                  Match Theme
+                </button>
+                <button
+                  onClick={() =>
+                    onUpdateSettings((prev) => ({
+                      ...prev,
+                      pdfView: { ...prev.pdfView, colorMode: 'original' },
+                    }))
+                  }
+                  className={`${styles.groupBtn} ${
+                    settings.pdfView.colorMode === 'original' ? styles.active : ''
+                  }`}
+                >
+                  Original Paper
+                </button>
+              </div>
+            </div>
           </>
         )}
       </div>

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
-import { PDFViewSettings } from '@/types';
+import { PDFViewSettings, ReadingTheme } from '@/types';
 import { TOCItem } from './TOCDrawer';
 import { Loader2 } from 'lucide-react';
 import styles from './PDFViewer.module.css';
@@ -16,6 +16,7 @@ interface PDFViewerProps {
   data: ArrayBuffer;
   initialPage: number;
   currentPage: number;
+  theme: ReadingTheme;
   settings: PDFViewSettings;
   onPageChange: (page: number, total: number) => void;
   onTOCLoaded: (items: TOCItem[]) => void;
@@ -28,6 +29,7 @@ export default function PDFViewer({
   data,
   initialPage,
   currentPage,
+  theme,
   settings,
   onPageChange,
   onTOCLoaded,
@@ -305,10 +307,16 @@ export default function PDFViewer({
     }
   };
 
+  const activeThemeClass =
+    settings.colorMode === 'original'
+      ? styles.day
+      : styles[theme] || styles.night;
+
   return (
     <div
       ref={containerRef}
       className={styles.singleContainer}
+      data-theme={theme}
       onClick={handleContainerClick}
     >
       {loading && (
@@ -318,7 +326,7 @@ export default function PDFViewer({
         </div>
       )}
       <div
-        className={styles.pageWrapper}
+        className={`${styles.pageWrapper} ${activeThemeClass}`}
         style={{ display: loading ? 'none' : 'block' }}
       >
         <canvas ref={canvasRef} className={styles.pdfCanvas} />

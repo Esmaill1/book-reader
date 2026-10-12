@@ -328,6 +328,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
           data={fileData}
           initialPage={currentPage}
           currentPage={currentPage}
+          theme={settings.theme}
           settings={settings.pdfView}
           onPageChange={handlePDFPageChange}
           onTOCLoaded={handleTOCLoaded}

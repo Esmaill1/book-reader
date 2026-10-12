@@ -33,18 +33,55 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-/* In OLED and Night mode, apply subtle eye-comfort filter to PDF canvas if user wants, or keep native */
-[data-theme="night"] .pageWrapper,
-[data-theme="oled"] .pageWrapper {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .pdfCanvas {
   display: block;
   max-width: 100%;
   height: auto;
+  transition: filter 0.25s ease;
+}
+
+/* ========================================================
+   ReadEra PDF Themes (Transforms PDF paper and typography)
+   ======================================================== */
+
+/* 1. Day Mode: Natural crisp white paper */
+.day {
+  background: #ffffff !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+.day .pdfCanvas {
+  filter: none;
+}
+
+/* 2. Sepia Mode: Warm vintage parchment, soft dark-amber text */
+.sepia {
+  background: #fbf0d9 !important;
+  box-shadow: 0 4px 24px rgba(74, 56, 36, 0.22);
+}
+.sepia .pdfCanvas {
+  filter: sepia(0.68) contrast(0.92) brightness(0.96);
+  mix-blend-mode: multiply;
+}
+
+/* 3. Night Mode: Eye-comfort charcoal dark background with light text */
+.night {
+  background: #181c24 !important;
+  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.65);
+}
+.night .pdfCanvas {
+  filter: invert(0.88) hue-rotate(180deg) contrast(0.95) brightness(0.92);
+}
+
+/* 4. OLED Black Mode: Pure #000000 pitch black with high-contrast text */
+.oled {
+  background: #000000 !important;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.9);
+}
+.oled .pdfCanvas {
+  filter: invert(1) hue-rotate(180deg) contrast(1.08) brightness(0.96);
 }
 
 .loadingOverlay {
