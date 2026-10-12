@@ -27,6 +27,9 @@ export function useReadingSync({
     last_read_at: new Date().toISOString(),
   });
 
+  const totalPagesRef = useRef(totalPages);
+  totalPagesRef.current = totalPages;
+
   const syncTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Flush function to save to Local DB and Cloud
@@ -44,10 +47,11 @@ export function useReadingSync({
     }
   }, []);
 
-  // Update position with 3-second debounce
+  // Update position with 2.5-second debounce
   const updateProgress = useCallback(
-    (page: number, cfi?: string, total: number = totalPages) => {
-      const percent = Math.min(100, Math.max(0, Math.round((page / Math.max(1, total)) * 100)));
+    (page: number, cfi?: string, total?: number) => {
+      const activeTotal = total ?? totalPagesRef.current ?? 1;
+      const percent = Math.min(100, Math.max(0, Math.round((page / Math.max(1, activeTotal)) * 100)));
 
       const updated: ReadingSession = {
         id: bookId,
@@ -69,7 +73,7 @@ export function useReadingSync({
         flushSync(updated);
       }, 2500);
     },
-    [bookId, totalPages, flushSync]
+    [bookId, flushSync]
   );
 
   // Lifecycle flush: flush when user switches tabs or navigates away

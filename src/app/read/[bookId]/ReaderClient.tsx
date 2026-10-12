@@ -74,7 +74,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
     },
     pdfView: {
       scrollMode: 'single',
-      zoomMode: 'fit-width',
+      zoomMode: 'fit-page',
       customZoom: 1.0,
     },
   });
@@ -214,7 +214,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
   };
 
   // Next / Prev actions
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     if (book?.format === 'pdf') {
       if (currentPage < totalPages) {
         handlePDFPageChange(currentPage + 1, totalPages);
@@ -222,9 +222,9 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
     } else if (book?.format === 'epub') {
       epubNextRef.current?.();
     }
-  };
+  }, [book?.format, currentPage, totalPages, handlePDFPageChange]);
 
-  const handlePrevPage = () => {
+  const handlePrevPage = useCallback(() => {
     if (book?.format === 'pdf') {
       if (currentPage > 1) {
         handlePDFPageChange(currentPage - 1, totalPages);
@@ -232,7 +232,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
     } else if (book?.format === 'epub') {
       epubPrevRef.current?.();
     }
-  };
+  }, [book?.format, currentPage, totalPages, handlePDFPageChange]);
 
   // Bookmark actions
   const isCurrentPageBookmarked = bookmarks.some(
@@ -274,6 +274,14 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
       handlePDFPageChange(item.page, totalPages);
     }
   };
+
+  const handleTOCLoaded = useCallback((items: TOCItem[]) => {
+    setTOCItems(items);
+  }, []);
+
+  const handleToggleControls = useCallback(() => {
+    setControlsVisible((prev) => !prev);
+  }, []);
 
   if (loading) {
     return (
@@ -322,8 +330,10 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
           currentPage={currentPage}
           settings={settings.pdfView}
           onPageChange={handlePDFPageChange}
-          onTOCLoaded={(items) => setTOCItems(items)}
-          onToggleControls={() => setControlsVisible((prev) => !prev)}
+          onTOCLoaded={handleTOCLoaded}
+          onToggleControls={handleToggleControls}
+          onPrevPage={handlePrevPage}
+          onNextPage={handleNextPage}
         />
       ) : (
         <EPUBViewer
@@ -332,8 +342,8 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
           theme={settings.theme}
           typography={settings.typography}
           onLocationChange={handleEPUBLocationChange}
-          onTOCLoaded={(items) => setTOCItems(items)}
-          onToggleControls={() => setControlsVisible((prev) => !prev)}
+          onTOCLoaded={handleTOCLoaded}
+          onToggleControls={handleToggleControls}
           onNextRef={epubNextRef}
           onPrevRef={epubPrevRef}
         />

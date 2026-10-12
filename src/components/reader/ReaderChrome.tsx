@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -45,10 +45,45 @@ export default function ReaderChrome({
   onPrevPage,
   onNextPage,
 }: ReaderChromeProps) {
+  // Local slider state so scrubbing is buttery smooth without choking render threads
+  const [sliderVal, setSliderVal] = useState(currentPage);
+  const isDraggingRef = useRef(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync with external currentPage only when not actively dragging
+  useEffect(() => {
+    if (!isDraggingRef.current) {
+      setSliderVal(currentPage);
+    }
+  }, [currentPage]);
+
+  const handleSliderChange = (val: number) => {
+    setSliderVal(val);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      onPageChange(val);
+    }, 90);
+  };
+
+  const handleSliderCommit = () => {
+    isDraggingRef.current = false;
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    onPageChange(sliderVal);
+  };
+
+  const displayPage = isDraggingRef.current ? sliderVal : currentPage;
+  const displayPercent = Math.min(
+    100,
+    Math.round((displayPage / Math.max(1, totalPages)) * 100)
+  );
+
   return (
     <>
       {/* Top Bar */}
-      <header className={`${styles.topBar} ${!visible ? styles.hidden : ''}`}>
+      <header
+        className={`${styles.topBar} ${!visible ? styles.hidden : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.leftGroup}>
           <Link href="/" className={styles.backBtn} title="Back to Library">
             <ArrowLeft size={18} />
@@ -100,14 +135,26 @@ export default function ReaderChrome({
       </header>
 
       {/* Bottom Bar */}
-      <footer className={`${styles.bottomBar} ${!visible ? styles.hidden : ''}`}>
+      <footer
+        className={`${styles.bottomBar} ${!visible ? styles.hidden : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.scrubberRow}>
           <input
             type="range"
             min={1}
             max={Math.max(1, totalPages)}
-            value={currentPage}
-            onChange={(e) => onPageChange(Number(e.target.value))}
+            value={sliderVal}
+            onMouseDown={() => {
+              isDraggingRef.current = true;
+            }}
+            onTouchStart={() => {
+              isDraggingRef.current = true;
+            }}
+            onChange={(e) => handleSliderChange(Number(e.target.value))}
+            onMouseUp={handleSliderCommit}
+            onTouchEnd={handleSliderCommit}
+            onKeyUp={handleSliderCommit}
             className={styles.pageSlider}
           />
         </div>
@@ -133,7 +180,9 @@ export default function ReaderChrome({
           </div>
 
           <div>
-            <span>Page {currentPage} of {totalPages} ({percent}%)</span>
+            <span>
+              Page {displayPage} of {totalPages} ({displayPercent}%)
+            </span>
           </div>
         </div>
       </footer>

@@ -35,6 +35,20 @@ export default function EPUBViewer({
   const renditionRef = useRef<Rendition | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Keep references to dynamic callbacks & initial values so book instance is never destroyed on state update
+  const onLocationChangeRef = useRef(onLocationChange);
+  onLocationChangeRef.current = onLocationChange;
+  const onTOCLoadedRef = useRef(onTOCLoaded);
+  onTOCLoadedRef.current = onTOCLoaded;
+  const onToggleControlsRef = useRef(onToggleControls);
+  onToggleControlsRef.current = onToggleControls;
+
+  const initialCfiRef = useRef(initialCfi);
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
+  const typographyRef = useRef(typography);
+  typographyRef.current = typography;
+
   // Expose next/prev page methods to parent
   useEffect(() => {
     if (onNextRef) {
@@ -45,61 +59,67 @@ export default function EPUBViewer({
     }
   }, [onNextRef, onPrevRef]);
 
-  // Apply styles & themes to Rendition
-  const applyStyles = useCallback(() => {
-    if (!renditionRef.current) return;
-    const rendition = renditionRef.current;
+  // Apply styling dynamically to the existing Rendition
+  const applyStylesToRendition = useCallback(
+    (rendition: Rendition, currentTheme: ReadingTheme, currentTypo: TypographySettings) => {
+      let fontFam = 'var(--font-sans)';
+      if (currentTypo.fontFamily === 'serif') fontFam = 'var(--font-serif)';
+      if (currentTypo.fontFamily === 'cairo') fontFam = "'Cairo', Tahoma, sans-serif";
+      if (currentTypo.fontFamily === 'amiri') fontFam = "'Amiri', Georgia, serif";
 
-    let fontFam = 'var(--font-sans)';
-    if (typography.fontFamily === 'serif') fontFam = 'var(--font-serif)';
-    if (typography.fontFamily === 'cairo') fontFam = "'Cairo', Tahoma, sans-serif";
-    if (typography.fontFamily === 'amiri') fontFam = "'Amiri', Georgia, serif";
+      let marginPadding = '0 24px';
+      if (currentTypo.margin === 'narrow') marginPadding = '0 8px';
+      if (currentTypo.margin === 'wide') marginPadding = '0 48px';
 
-    let marginPadding = '0 24px';
-    if (typography.margin === 'narrow') marginPadding = '0 8px';
-    if (typography.margin === 'wide') marginPadding = '0 48px';
+      let color = '#e2e8f0';
+      let bg = '#181c24';
 
-    let color = '#e2e8f0';
-    let bg = '#181c24';
+      if (currentTheme === 'day') {
+        color = '#0f172a';
+        bg = '#f8fafc';
+      } else if (currentTheme === 'sepia') {
+        color = '#4a3824';
+        bg = '#fbf0d9';
+      } else if (currentTheme === 'oled') {
+        color = '#e5e7eb';
+        bg = '#000000';
+      }
 
-    if (theme === 'day') {
-      color = '#0f172a';
-      bg = '#f8fafc';
-    } else if (theme === 'sepia') {
-      color = '#4a3824';
-      bg = '#fbf0d9';
-    } else if (theme === 'oled') {
-      color = '#e5e7eb';
-      bg = '#000000';
-    }
+      rendition.themes.default({
+        body: {
+          color: `${color} !important`,
+          background: `${bg} !important`,
+          'font-family': `${fontFam} !important`,
+          'font-size': `${currentTypo.fontSize}px !important`,
+          'line-height': `${currentTypo.lineHeight} !important`,
+          padding: `${marginPadding} !important`,
+        },
+        p: {
+          'line-height': `${currentTypo.lineHeight} !important`,
+        },
+      });
+    },
+    []
+  );
 
-    rendition.themes.default({
-      body: {
-        color: `${color} !important`,
-        background: `${bg} !important`,
-        'font-family': `${fontFam} !important`,
-        'font-size': `${typography.fontSize}px !important`,
-        'line-height': `${typography.lineHeight} !important`,
-        padding: `${marginPadding} !important`,
-      },
-      p: {
-        'line-height': `${typography.lineHeight} !important`,
-      },
-    });
-  }, [theme, typography]);
-
+  // Dynamically update theme/typography without restarting EPUB
   useEffect(() => {
-    applyStyles();
-  }, [applyStyles]);
+    if (renditionRef.current) {
+      applyStylesToRendition(renditionRef.current, theme, typography);
+    }
+  }, [theme, typography, applyStylesToRendition]);
 
-  // Initialize EPUB Book & Rendition
+  // Initialize EPUB Book & Rendition ONCE per data buffer
   useEffect(() => {
     if (!containerRef.current) return;
     let isMounted = true;
     setLoading(true);
 
+    let book: EPubBook | null = null;
+
     try {
-      const book = ePub(data);
+      const bufferCopy = data.slice(0);
+      book = ePub(bufferCopy);
       bookRef.current = book;
 
       const rendition = book.renderTo(containerRef.current, {
@@ -121,18 +141,18 @@ export default function EPUBViewer({
             label: t.label?.trim() || 'Chapter',
             href: t.href,
           }));
-          onTOCLoaded(tocItems);
+          onTOCLoadedRef.current(tocItems);
 
-          // Generate locations for percentage calculation
-          return book.locations.generate(1024);
+          // Generate locations for reading percentage calculation
+          return book!.locations.generate(1024);
         })
         .then(() => {
           if (!isMounted) return;
           setLoading(false);
-          applyStyles();
+          applyStylesToRendition(rendition, themeRef.current, typographyRef.current);
 
-          // Display initial CFI or start
-          rendition.display(initialCfi || undefined);
+          // Display initial CFI or start from beginning
+          rendition.display(initialCfiRef.current || undefined);
         })
         .catch((e) => {
           console.warn('Error rendering EPUB:', e);
@@ -143,16 +163,25 @@ export default function EPUBViewer({
       rendition.on('relocated', (location: any) => {
         if (!isMounted) return;
         const cfi = location.start.cfi;
-        const percent = Math.round((book.locations.percentageFromCfi(cfi) || 0) * 100);
-        const total = (book.locations as any).total || 100;
-        const currentLoc = (book.locations as any).locationFromCfi(cfi) || 1;
+        const percent = Math.round((book!.locations.percentageFromCfi(cfi) || 0) * 100);
+        const total = (book!.locations as any).total || 100;
+        const currentLoc = (book!.locations as any).locationFromCfi(cfi) || 1;
 
-        onLocationChange(cfi, percent, currentLoc, total);
+        onLocationChangeRef.current(cfi, percent, currentLoc, total);
       });
 
-      // Click to toggle controls
-      rendition.on('click', () => {
-        onToggleControls();
+      // Tap / Click handling inside EPUB iframe (ReadEra tap zones)
+      rendition.on('click', (e: MouseEvent) => {
+        const width = window.innerWidth;
+        const x = e.clientX;
+        const ratio = x / width;
+        if (ratio < 0.25) {
+          rendition.prev();
+        } else if (ratio > 0.75) {
+          rendition.next();
+        } else {
+          onToggleControlsRef.current();
+        }
       });
 
       // Keyboard navigation
@@ -169,14 +198,14 @@ export default function EPUBViewer({
         isMounted = false;
         window.removeEventListener('keydown', handleKey);
         try {
-          book.destroy();
+          book?.destroy();
         } catch {}
       };
     } catch (err) {
       console.error('Failed to initialize EPUB:', err);
       setLoading(false);
     }
-  }, [data, initialCfi, applyStyles, onLocationChange, onTOCLoaded, onToggleControls]);
+  }, [data, applyStylesToRendition]);
 
   return (
     <div className={styles.wrapper}>
@@ -189,7 +218,7 @@ export default function EPUBViewer({
       <div
         ref={containerRef}
         className={styles.viewerContainer}
-        style={{ display: loading ? 'none' : 'block' }}
+        style={{ opacity: loading ? 0 : 1 }}
       />
     </div>
   );
