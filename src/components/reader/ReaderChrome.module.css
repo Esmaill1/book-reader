@@ -40,16 +40,16 @@
   border-radius: var(--radius-md);
   color: var(--text-main);
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--border-subtle);
   transition: color var(--transition-fast), background var(--transition-fast),
     border-color var(--transition-fast);
   flex-shrink: 0;
 }
 
 .backBtn:hover {
-  background: var(--accent);
-  color: #ffffff;
-  border-color: var(--accent);
+  background: var(--bg-surface-elevated);
+  color: var(--text-main);
+  border-color: var(--border-color);
 }
 
 .titleArea {
@@ -60,8 +60,10 @@
 }
 
 .bookTitle {
+  font-family: var(--font-display);
   font-size: var(--text-base);
   font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.01em;
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
@@ -93,14 +95,16 @@
   border-radius: var(--radius-md);
   color: var(--text-muted);
   background: transparent;
-  border: none;
+  border: 1px solid var(--border-subtle);
   cursor: pointer;
-  transition: color var(--transition-fast), background var(--transition-fast);
+  transition: color var(--transition-fast), background var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .actionBtn:hover {
   color: var(--text-main);
   background: var(--bg-surface-elevated);
+  border-color: var(--border-color);
 }
 
 .actionBtn.bookmarked {
@@ -156,7 +160,13 @@
 .pageSlider::-webkit-slider-runnable-track {
   height: var(--space-1);
   border-radius: var(--radius-full);
-  background: var(--bg-surface-elevated);
+  background: linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--page-fill, 0%),
+    var(--bg-surface-elevated) var(--page-fill, 0%),
+    var(--bg-surface-elevated) 100%
+  );
   border: 1px solid var(--border-subtle);
 }
 
@@ -167,22 +177,29 @@
   height: var(--space-5);
   margin-top: calc((var(--space-1) - var(--space-5)) / 2);
   border-radius: var(--radius-full);
-  background: var(--accent);
-  border: 2px solid var(--bg-surface-glass);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-fast), background var(--transition-fast);
+  background: var(--bg-surface-elevated);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow), var(--shadow-sm);
+  transition: transform var(--transition-fast), border-color var(--transition-fast),
+    background var(--transition-fast);
 }
 
 .pageSlider:hover::-webkit-slider-thumb,
 .pageSlider:active::-webkit-slider-thumb {
-  background: var(--accent-hover);
+  border-color: var(--accent-hover);
   transform: scale(1.1);
 }
 
 .pageSlider::-moz-range-track {
   height: var(--space-1);
   border-radius: var(--radius-full);
-  background: var(--bg-surface-elevated);
+  background: linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--page-fill, 0%),
+    var(--bg-surface-elevated) var(--page-fill, 0%),
+    var(--bg-surface-elevated) 100%
+  );
   border: 1px solid var(--border-subtle);
 }
 
@@ -190,14 +207,14 @@
   width: calc(var(--space-5) - var(--space-1));
   height: calc(var(--space-5) - var(--space-1));
   border-radius: var(--radius-full);
-  background: var(--accent);
-  border: 2px solid var(--bg-surface-glass);
-  box-shadow: var(--shadow-sm);
+  background: var(--bg-surface-elevated);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow), var(--shadow-sm);
 }
 
 .pageSlider:hover::-moz-range-thumb,
 .pageSlider:active::-moz-range-thumb {
-  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .bottomInfoRow {

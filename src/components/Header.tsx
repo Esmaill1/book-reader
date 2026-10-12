@@ -14,7 +14,7 @@ interface HeaderProps {
 const THEMES: { id: ReadingTheme; name: string; hint: string; Icon: typeof Sun }[] = [
   { id: 'day', name: 'Day', hint: 'Clean Light', Icon: Sun },
   { id: 'sepia', name: 'Sepia', hint: 'Warm Paper', Icon: Coffee },
-  { id: 'night', name: 'Night', hint: 'Dark Slate', Icon: Moon },
+  { id: 'night', name: 'Night', hint: 'Book Cloth', Icon: Moon },
   { id: 'oled', name: 'OLED', hint: 'Pure Pitch Black', Icon: Sparkles },
 ];
 
@@ -39,7 +39,7 @@ export default function Header({ onOpenUpload }: HeaderProps) {
       <div className={styles.leftSection}>
         <Link href="/" className={styles.brand}>
           <BookOpen className={styles.logoIcon} aria-hidden="true" />
-          <span>BookEra</span>
+          <span className={styles.brandWord}>BookEra</span>
         </Link>
         <div className={styles.syncBadge} title={cloudReady ? 'Cloud Sync Active' : 'Local Storage Mode (Offline ready)'}>
           {cloudReady ? (

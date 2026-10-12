@@ -45,13 +45,17 @@
   height: var(--touch-target);
   border-radius: var(--radius-md);
   color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
   flex-shrink: 0;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .closeBtn:hover {
   color: var(--text-main);
   background: var(--bg-surface-elevated);
+  border-color: var(--border-color);
 }
 
 .list {

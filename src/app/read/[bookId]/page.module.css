@@ -30,9 +30,14 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-full);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-lg);
+  background: radial-gradient(
+      circle at 50% 50%,
+      var(--accent-glow),
+      transparent 75%
+    ),
+    var(--bg-surface);
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-glow), var(--shadow-lg);
 }
 
 .loadingBookIcon {
@@ -53,7 +58,7 @@
   margin: 0;
   font-size: var(--text-base);
   font-weight: var(--font-weight-medium);
-  color: var(--text-main);
+  color: var(--text-muted);
 }
 
 .skeletonBar {

@@ -174,6 +174,7 @@ export default function ReaderChrome({
             onMouseUp={handleSliderCommit}
             onTouchEnd={handleSliderCommit}
             onKeyUp={handleSliderCommit}
+            style={{ '--page-fill': `${displayPercent}%` } as React.CSSProperties}
             className={styles.pageSlider}
           />
         </div>

@@ -39,7 +39,7 @@ export const PDF_THEME_MAP: Record<ReadingTheme, PDFThemeSurface> = {
     shadow: '0 var(--space-2) var(--space-6) rgba(74, 56, 36, 0.22)',
   },
   night: {
-    paper: '#181c24',
+    paper: '#141a17',
     canvasFilter: 'invert(0.88) hue-rotate(180deg) contrast(0.95) brightness(0.92)',
     blend: 'normal',
     shadow: '0 var(--space-2) var(--space-6) rgba(0, 0, 0, 0.65)',

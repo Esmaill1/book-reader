@@ -45,13 +45,17 @@
   height: var(--touch-target);
   border-radius: var(--radius-md);
   color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
   flex-shrink: 0;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .closeBtn:hover {
   color: var(--text-main);
   background: var(--bg-surface-elevated);
+  border-color: var(--border-color);
 }
 
 .content {
@@ -153,19 +157,19 @@
 }
 
 .swatch_day {
-  background-image: linear-gradient(135deg, #f7f9fc 55%, #2563eb 55%);
+  background-image: linear-gradient(135deg, #f7f4ec 55%, #9a7524 55%);
 }
 
 .swatch_sepia {
-  background-image: linear-gradient(135deg, #f8eed9 55%, #9a4a06 55%);
+  background-image: linear-gradient(135deg, #f3e8d2 55%, #8a5a17 55%);
 }
 
 .swatch_night {
-  background-image: linear-gradient(135deg, #14181f 55%, #38bdf8 55%);
+  background-image: linear-gradient(135deg, #141a17 55%, #d3aa54 55%);
 }
 
 .swatch_oled {
-  background-image: linear-gradient(135deg, #000000 55%, #38bdf8 55%);
+  background-image: linear-gradient(135deg, #000000 55%, #d3aa54 55%);
 }
 
 .fontGrid {

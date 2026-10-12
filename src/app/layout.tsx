@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Merriweather, Cairo, Amiri } from "next/font/google";
+import { Inter, Merriweather, Cairo, Amiri, Fraunces } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -30,6 +30,14 @@ const amiri = Amiri({
   display: "swap",
 });
 
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: "variable",
+  axes: ["opsz"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: {
     default: "BookEra Web — Personal Cloud Reader",
@@ -47,7 +55,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#14181f",
+  themeColor: "#141a17",
 };
 
 export default function RootLayout({
@@ -60,7 +68,7 @@ export default function RootLayout({
       lang="en"
       data-theme="night"
       suppressHydrationWarning
-      className={`${inter.variable} ${merriweather.variable} ${cairo.variable} ${amiri.variable}`}
+      className={`${inter.variable} ${merriweather.variable} ${cairo.variable} ${amiri.variable} ${fraunces.variable}`}
     >
       <head>
         <script

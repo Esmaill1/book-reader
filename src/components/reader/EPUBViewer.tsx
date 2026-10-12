@@ -11,10 +11,10 @@ export const EPUB_THEME_FALLBACK: Record<
   ReadingTheme,
   { color: string; bg: string }
 > = {
-  day: { color: '#101828', bg: '#f7f9fc' },
-  sepia: { color: '#3f2e1d', bg: '#f8eed9' },
-  night: { color: '#e6ebf2', bg: '#14181f' },
-  oled: { color: '#eceff4', bg: '#000000' },
+  day: { color: '#1e2621', bg: '#f7f4ec' },
+  sepia: { color: '#33261a', bg: '#f3e8d2' },
+  night: { color: '#ece5d3', bg: '#141a17' },
+  oled: { color: '#ece5d3', bg: '#000000' },
 };
 
 // Reads the live theme palette from globals.css (:root data-theme) so the
