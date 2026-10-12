@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Book,
@@ -76,6 +76,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
       scrollMode: 'single',
       zoomMode: 'fit-page',
       customZoom: 1.0,
+      colorMode: 'match-theme',
     },
   });
 
@@ -159,9 +160,21 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
         const savedAnnotations = await getLocalAnnotationsForBook(bookId);
         setBookmarks(savedAnnotations);
 
-        // 5. Load theme from localStorage
+        // 5. Load theme & PDF settings from localStorage
         const savedTheme = (localStorage.getItem('bookera_theme') as any) || 'night';
-        setSettings((prev) => ({ ...prev, theme: savedTheme }));
+        const savedScrollMode = localStorage.getItem('bookera_pdf_scroll_mode') as any;
+
+        setSettings((prev) => ({
+          ...prev,
+          theme: savedTheme,
+          pdfView: {
+            ...prev.pdfView,
+            scrollMode:
+              savedScrollMode === 'continuous' || savedScrollMode === 'single'
+                ? savedScrollMode
+                : prev.pdfView.scrollMode,
+          },
+        }));
         document.documentElement.setAttribute('data-theme', savedTheme);
 
         setLoading(false);
@@ -180,6 +193,20 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
       isMounted = false;
     };
   }, [bookId]);
+
+  // Persist settings changes
+  const handleUpdateSettings = useCallback(
+    (updater: (prev: ReaderSettings) => ReaderSettings) => {
+      setSettings((prev) => {
+        const next = updater(prev);
+        if (next.pdfView.scrollMode !== prev.pdfView.scrollMode) {
+          localStorage.setItem('bookera_pdf_scroll_mode', next.pdfView.scrollMode);
+        }
+        return next;
+      });
+    },
+    []
+  );
 
   // Handle PDF page change
   const handlePDFPageChange = useCallback(
@@ -233,6 +260,124 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
       epubPrevRef.current?.();
     }
   }, [book?.format, currentPage, totalPages, handlePDFPageChange]);
+
+  // Zoom Actions
+  const handleZoomIn = useCallback(() => {
+    if (book?.format === 'epub') {
+      setSettings((prev) => ({
+        ...prev,
+        typography: {
+          ...prev.typography,
+          fontSize: Math.min(36, prev.typography.fontSize + 2),
+        },
+      }));
+    } else {
+      setSettings((prev) => {
+        const currentZoom = prev.pdfView.customZoom || 1.0;
+        const nextZoom = Math.min(3.0, Math.round((currentZoom + 0.15) * 100) / 100);
+        return {
+          ...prev,
+          pdfView: {
+            ...prev.pdfView,
+            zoomMode: 'custom',
+            customZoom: nextZoom,
+          },
+        };
+      });
+    }
+  }, [book?.format]);
+
+  const handleZoomOut = useCallback(() => {
+    if (book?.format === 'epub') {
+      setSettings((prev) => ({
+        ...prev,
+        typography: {
+          ...prev.typography,
+          fontSize: Math.max(12, prev.typography.fontSize - 2),
+        },
+      }));
+    } else {
+      setSettings((prev) => {
+        const currentZoom = prev.pdfView.customZoom || 1.0;
+        const nextZoom = Math.max(0.5, Math.round((currentZoom - 0.15) * 100) / 100);
+        return {
+          ...prev,
+          pdfView: {
+            ...prev.pdfView,
+            zoomMode: 'custom',
+            customZoom: nextZoom,
+          },
+        };
+      });
+    }
+  }, [book?.format]);
+
+  const handleZoomReset = useCallback(() => {
+    if (book?.format === 'epub') {
+      setSettings((prev) => ({
+        ...prev,
+        typography: {
+          ...prev.typography,
+          fontSize: 18,
+        },
+      }));
+    } else {
+      setSettings((prev) => {
+        const nextMode = prev.pdfView.zoomMode === 'fit-page' ? 'fit-width' : 'fit-page';
+        return {
+          ...prev,
+          pdfView: {
+            ...prev.pdfView,
+            zoomMode: nextMode,
+            customZoom: 1.0,
+          },
+        };
+      });
+    }
+  }, [book?.format]);
+
+  const zoomDisplay = useMemo(() => {
+    if (book?.format === 'epub') {
+      return `${settings.typography.fontSize}px`;
+    }
+    if (settings.pdfView.zoomMode === 'fit-page') return 'Fit';
+    if (settings.pdfView.zoomMode === 'fit-width') return 'Width';
+    return `${Math.round((settings.pdfView.customZoom || 1.0) * 100)}%`;
+  }, [
+    book?.format,
+    settings.pdfView.zoomMode,
+    settings.pdfView.customZoom,
+    settings.typography.fontSize,
+  ]);
+
+  // Global Keyboard Shortcuts (+/-/0)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        handleZoomIn();
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        handleZoomOut();
+      } else if (e.key === '0') {
+        e.preventDefault();
+        handleZoomReset();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleZoomIn, handleZoomOut, handleZoomReset]);
 
   // Bookmark actions
   const isCurrentPageBookmarked = bookmarks.some(
@@ -313,6 +458,10 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
         totalPages={totalPages}
         percent={percent}
         isBookmarked={isCurrentPageBookmarked}
+        zoomDisplay={zoomDisplay}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomReset={handleZoomReset}
         onToggleBookmark={handleToggleBookmark}
         onOpenTOC={() => setIsTOCOpen(true)}
         onOpenBookmarks={() => setIsBookmarksOpen(true)}
@@ -335,6 +484,8 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
           onToggleControls={handleToggleControls}
           onPrevPage={handlePrevPage}
           onNextPage={handleNextPage}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
         />
       ) : (
         <EPUBViewer
@@ -356,7 +507,7 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
         onClose={() => setIsSettingsOpen(false)}
         format={book.format}
         settings={settings}
-        onUpdateSettings={setSettings}
+        onUpdateSettings={handleUpdateSettings}
       />
 
       {/* TOC Drawer */}

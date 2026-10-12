@@ -9,6 +9,8 @@ import {
   Settings as SettingsIcon,
   ChevronLeft,
   ChevronRight,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import styles from './ReaderChrome.module.css';
 
@@ -20,6 +22,10 @@ interface ReaderChromeProps {
   totalPages: number;
   percent: number;
   isBookmarked: boolean;
+  zoomDisplay?: string;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onZoomReset?: () => void;
   onToggleBookmark: () => void;
   onOpenTOC: () => void;
   onOpenBookmarks: () => void;
@@ -37,6 +43,10 @@ export default function ReaderChrome({
   totalPages,
   percent,
   isBookmarked,
+  zoomDisplay,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
   onToggleBookmark,
   onOpenTOC,
   onOpenBookmarks,
@@ -165,6 +175,7 @@ export default function ReaderChrome({
               onClick={onPrevPage}
               disabled={currentPage <= 1}
               className={styles.navArrowBtn}
+              title="Previous Page (Left Arrow)"
             >
               <ChevronLeft size={14} />
               <span>Prev</span>
@@ -173,11 +184,41 @@ export default function ReaderChrome({
               onClick={onNextPage}
               disabled={currentPage >= totalPages}
               className={styles.navArrowBtn}
+              title="Next Page (Right Arrow)"
             >
               <span>Next</span>
               <ChevronRight size={14} />
             </button>
           </div>
+
+          {/* Zoom Controls */}
+          {onZoomIn && onZoomOut && (
+            <div className={styles.zoomControls}>
+              <button
+                onClick={onZoomOut}
+                className={styles.zoomBtn}
+                title="Zoom Out (-)"
+                aria-label="Zoom Out"
+              >
+                <ZoomOut size={14} />
+              </button>
+              <button
+                onClick={onZoomReset}
+                className={styles.zoomLabelBtn}
+                title="Click to reset zoom (0)"
+              >
+                <span>{zoomDisplay || 'Fit'}</span>
+              </button>
+              <button
+                onClick={onZoomIn}
+                className={styles.zoomBtn}
+                title="Zoom In (+)"
+                aria-label="Zoom In"
+              >
+                <ZoomIn size={14} />
+              </button>
+            </div>
+          )}
 
           <div>
             <span>

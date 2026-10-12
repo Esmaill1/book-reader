@@ -238,6 +238,19 @@ export default function SettingsDrawer({
                   onClick={() =>
                     onUpdateSettings((prev) => ({
                       ...prev,
+                      pdfView: { ...prev.pdfView, zoomMode: 'fit-page' },
+                    }))
+                  }
+                  className={`${styles.groupBtn} ${
+                    settings.pdfView.zoomMode === 'fit-page' ? styles.active : ''
+                  }`}
+                >
+                  Fit Page
+                </button>
+                <button
+                  onClick={() =>
+                    onUpdateSettings((prev) => ({
+                      ...prev,
                       pdfView: { ...prev.pdfView, zoomMode: 'fit-width' },
                     }))
                   }
@@ -251,15 +264,47 @@ export default function SettingsDrawer({
                   onClick={() =>
                     onUpdateSettings((prev) => ({
                       ...prev,
-                      pdfView: { ...prev.pdfView, zoomMode: 'fit-page' },
+                      pdfView: { ...prev.pdfView, zoomMode: 'custom', customZoom: 1.0 },
                     }))
                   }
                   className={`${styles.groupBtn} ${
-                    settings.pdfView.zoomMode === 'fit-page' ? styles.active : ''
+                    settings.pdfView.zoomMode === 'custom' && Math.round((settings.pdfView.customZoom || 1.0) * 100) === 100
+                      ? styles.active
+                      : ''
                   }`}
                 >
-                  Fit Page
+                  100%
                 </button>
+              </div>
+            </div>
+
+            <div className={styles.section}>
+              <span className={styles.sectionLabel}>
+                Zoom Level ({Math.round((settings.pdfView.customZoom || 1.0) * 100)}%)
+              </span>
+              <div className={styles.sliderRow}>
+                <input
+                  type="range"
+                  min={50}
+                  max={250}
+                  step={10}
+                  value={Math.round((settings.pdfView.customZoom || 1.0) * 100)}
+                  onChange={(e) => {
+                    const zoomVal = Number(e.target.value) / 100;
+                    onUpdateSettings((prev) => ({
+                      ...prev,
+                      pdfView: {
+                        ...prev.pdfView,
+                        zoomMode: 'custom',
+                        customZoom: zoomVal,
+                      },
+                    }));
+                  }}
+                  className={styles.sliderInput}
+                />
+                <span className={styles.sliderValue}>
+                  {Math.round((settings.pdfView.customZoom || 1.0) * 100)}%
+                </span>
               </div>
             </div>
 

@@ -5,6 +5,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
 import { PDFViewSettings, ReadingTheme } from '@/types';
 import { TOCItem } from './TOCDrawer';
+import PDFContinuousView from './PDFContinuousView';
 import { Loader2 } from 'lucide-react';
 import styles from './PDFViewer.module.css';
 
@@ -23,6 +24,8 @@ interface PDFViewerProps {
   onToggleControls: () => void;
   onPrevPage?: () => void;
   onNextPage?: () => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
 }
 
 export default function PDFViewer({
@@ -36,6 +39,8 @@ export default function PDFViewer({
   onToggleControls,
   onPrevPage,
   onNextPage,
+  onZoomIn,
+  onZoomOut,
 }: PDFViewerProps) {
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [totalPages, setTotalPages] = useState(1);
@@ -64,7 +69,7 @@ export default function PDFViewer({
   const initialPageRef = useRef(initialPage);
   const hasReportedInitialPageRef = useRef(false);
 
-  // Load PDF Document ONCE per data buffer - NEVER reload on page turn
+  // Load PDF Document ONCE per data buffer
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -129,13 +134,12 @@ export default function PDFViewer({
     };
   }, [data]);
 
-  // Double-Buffered, Flicker-Free Page Render
-  const renderPage = useCallback(
+  // Double-Buffered, Flicker-Free Single Page Render
+  const renderSinglePage = useCallback(
     async (pageNum: number) => {
       if (!pdfDoc) return;
       if (pageNum < 1 || pageNum > pdfDoc.numPages) return;
 
-      // If already rendering, queue up target page and cancel current render task
       if (isRenderingRef.current) {
         nextRenderPageRef.current = pageNum;
         if (activeRenderTaskRef.current) {
@@ -156,9 +160,8 @@ export default function PDFViewer({
           return;
         }
 
-        // Calculate available dimensions from container
         const container = containerRef.current;
-        const padX = 32;
+        const padX = 48;
         const padY = 140;
         const availWidth = Math.max(200, (container?.clientWidth || window.innerWidth) - padX);
         const availHeight = Math.max(200, (container?.clientHeight || window.innerHeight) - padY);
@@ -167,13 +170,15 @@ export default function PDFViewer({
 
         let scale = 1.0;
         if (settings.zoomMode === 'fit-width') {
-          scale = Math.min(3.0, availWidth / unscaledViewport.width);
+          scale = Math.min(3.5, availWidth / unscaledViewport.width);
         } else if (settings.zoomMode === 'fit-page') {
           const scaleW = availWidth / unscaledViewport.width;
           const scaleH = availHeight / unscaledViewport.height;
           scale = Math.min(scaleW, scaleH);
         } else {
-          scale = settings.customZoom || 1.0;
+          // Custom zoom relative to optimal fit
+          const baseScale = Math.min(availWidth / unscaledViewport.width, availHeight / unscaledViewport.height);
+          scale = baseScale * (settings.customZoom || 1.0);
         }
 
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -223,28 +228,30 @@ export default function PDFViewer({
         if (nextRenderPageRef.current !== null) {
           const nextTarget = nextRenderPageRef.current;
           nextRenderPageRef.current = null;
-          renderPage(nextTarget);
+          renderSinglePage(nextTarget);
         }
       }
     },
     [pdfDoc, settings.zoomMode, settings.customZoom]
   );
 
-  // Render when currentPage or settings change
+  // Render when in single page mode
   useEffect(() => {
-    if (pdfDoc && currentPage) {
-      renderPage(currentPage);
+    if (pdfDoc && currentPage && settings.scrollMode === 'single') {
+      renderSinglePage(currentPage);
     }
-  }, [pdfDoc, currentPage, renderPage]);
+  }, [pdfDoc, currentPage, settings.scrollMode, renderSinglePage]);
 
-  // Window resize handler with debounce
+  // Window resize handler with debounce (single mode)
   useEffect(() => {
+    if (settings.scrollMode !== 'single') return;
+
     let timeout: NodeJS.Timeout;
     const handleResize = () => {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
         if (pdfDoc && currentPage) {
-          renderPage(currentPage);
+          renderSinglePage(currentPage);
         }
       }, 150);
     };
@@ -253,10 +260,32 @@ export default function PDFViewer({
       clearTimeout(timeout);
       window.removeEventListener('resize', handleResize);
     };
-  }, [pdfDoc, currentPage, renderPage]);
+  }, [pdfDoc, currentPage, settings.scrollMode, renderSinglePage]);
 
-  // Keyboard navigation
+  // Wheel zoom with Ctrl key (single mode)
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el || settings.scrollMode !== 'single') return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        if (e.deltaY < 0 && onZoomIn) {
+          onZoomIn();
+        } else if (e.deltaY > 0 && onZoomOut) {
+          onZoomOut();
+        }
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [onZoomIn, onZoomOut, settings.scrollMode]);
+
+  // Keyboard navigation (single mode)
+  useEffect(() => {
+    if (settings.scrollMode !== 'single') return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
         if (currentPage < totalPages) {
@@ -278,10 +307,10 @@ export default function PDFViewer({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage, totalPages]);
+  }, [currentPage, totalPages, settings.scrollMode]);
 
-  // ReadEra-style Tap zones: Left 25% prev, Right 25% next, Center toggle chrome
-  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  // ReadEra-style Tap zones in single mode
+  const handleSingleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const ratio = x / rect.width;
@@ -307,6 +336,33 @@ export default function PDFViewer({
     }
   };
 
+  if (loading) {
+    return (
+      <div className={styles.loadingOverlay}>
+        <Loader2 size={36} className={styles.spinner} />
+        <span>Opening PDF document...</span>
+      </div>
+    );
+  }
+
+  // 1. Continuous Pages Mode
+  if (settings.scrollMode === 'continuous' && pdfDoc) {
+    return (
+      <PDFContinuousView
+        pdfDoc={pdfDoc}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        theme={theme}
+        settings={settings}
+        onPageChange={onPageChange}
+        onToggleControls={onToggleControls}
+        onZoomIn={onZoomIn}
+        onZoomOut={onZoomOut}
+      />
+    );
+  }
+
+  // 2. Single Page Mode
   const activeThemeClass =
     settings.colorMode === 'original'
       ? styles.day
@@ -317,17 +373,11 @@ export default function PDFViewer({
       ref={containerRef}
       className={styles.singleContainer}
       data-theme={theme}
-      onClick={handleContainerClick}
+      onClick={handleSingleContainerClick}
     >
-      {loading && (
-        <div className={styles.loadingOverlay}>
-          <Loader2 size={36} className={styles.spinner} />
-          <span>Opening PDF document...</span>
-        </div>
-      )}
       <div
         className={`${styles.pageWrapper} ${activeThemeClass}`}
-        style={{ display: loading ? 'none' : 'block' }}
+        style={{ display: 'block' }}
       >
         <canvas ref={canvasRef} className={styles.pdfCanvas} />
       </div>

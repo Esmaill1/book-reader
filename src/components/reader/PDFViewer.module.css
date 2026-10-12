@@ -16,8 +16,6 @@
   width: 100%;
   height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
   background: var(--bg-main);
   padding: 4.5rem 1rem 5.5rem;
   box-sizing: border-box;
@@ -25,6 +23,7 @@
 }
 
 .pageWrapper {
+  margin: auto;
   position: relative;
   background: #ffffff;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
@@ -34,6 +33,7 @@
   align-items: center;
   justify-content: center;
   transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  flex-shrink: 0;
 }
 
 .pdfCanvas {
@@ -104,8 +104,68 @@
   to { transform: rotate(360deg); }
 }
 
+/* ========================================================
+   Continuous Vertical Scroll Mode
+   ======================================================== */
+.continuousContainer {
+  width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-main);
+  padding: 4.5rem 1rem 6rem;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  user-select: text;
+  -webkit-overflow-scrolling: touch;
+}
+
+.continuousScrollColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.continuousPageItem {
+  position: relative;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  flex-shrink: 0;
+}
+
+.continuousPageItem:last-child {
+  margin-bottom: 5rem;
+}
+
+.continuousPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  background: rgba(125, 125, 125, 0.05);
+  user-select: none;
+}
+
 @media (max-width: 640px) {
   .container {
     padding: 3.8rem 0.5rem 5rem;
+  }
+  .continuousContainer {
+    padding: 3.8rem 0.5rem 5.5rem;
   }
 }
