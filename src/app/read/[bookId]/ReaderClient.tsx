@@ -18,9 +18,11 @@ import {
 } from '@/lib/db';
 import {
   fetchCloudSession,
+  fetchCloudBooks,
   downloadCloudBookFile,
   isCloudConfigured,
 } from '@/lib/supabase';
+import { getLibraryCode } from '@/lib/auth';
 import { useReadingSync } from '@/hooks/useReadingSync';
 import ReaderChrome from '@/components/reader/ReaderChrome';
 import SettingsDrawer from '@/components/reader/SettingsDrawer';
@@ -129,18 +131,41 @@ export default function ReaderClient({ bookId }: ReaderClientProps) {
         let bookMeta = await getLocalBook(bookId);
         let bookBinary = await getLocalBookFile(bookId);
 
-        // 2. If not local but cloud is enabled, attempt cloud fetch
+        // 2. If not local but cloud is configured, check cloud metadata first
+        const activeCode = getLibraryCode();
+        if (!bookMeta && isCloudConfigured()) {
+          try {
+            const cloudBooks = await fetchCloudBooks(activeCode);
+            bookMeta = cloudBooks.find((b) => b.id === bookId);
+          } catch {
+            // ignore
+          }
+        }
+
+        // 3. If binary not local but cloud is enabled, attempt cloud fetch
         if (!bookBinary && isCloudConfigured()) {
-          const cloudBuffer =
-            (await downloadCloudBookFile(`${bookId}.pdf`)) ||
-            (await downloadCloudBookFile(`${bookId}.epub`));
+          const candidates = [
+            bookMeta?.file_path,
+            `${activeCode}/${bookId}.${bookMeta?.format || 'pdf'}`,
+            `${activeCode}/${bookId}.${bookMeta?.format || 'epub'}`,
+            `${bookId}.pdf`,
+            `${bookId}.epub`,
+          ].filter(Boolean) as string[];
+
+          let cloudBuffer: ArrayBuffer | null = null;
+          for (const path of candidates) {
+            cloudBuffer = await downloadCloudBookFile(path);
+            if (cloudBuffer) break;
+          }
+
           if (cloudBuffer) {
+            const mime = bookMeta?.format === 'pdf' ? 'application/pdf' : 'application/epub+zip';
             bookBinary = {
               data: cloudBuffer,
-              type: 'application/octet-stream',
+              type: mime,
             };
             if (bookMeta) {
-              await saveLocalBook(bookMeta, cloudBuffer, bookBinary.type);
+              await saveLocalBook(bookMeta, cloudBuffer, mime);
             }
           }
         }

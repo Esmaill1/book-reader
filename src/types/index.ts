@@ -4,6 +4,7 @@ export type ReadingTheme = 'day' | 'sepia' | 'night' | 'oled';
 
 export interface Book {
   id: string;
+  library_code?: string;
   title: string;
   author: string;
   format: BookFormat;
@@ -18,6 +19,7 @@ export interface Book {
 export interface ReadingSession {
   id: string;
   book_id: string;
+  library_code?: string;
   current_page: number;
   current_cfi?: string;
   progress_percent: number;

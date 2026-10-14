@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { ReadingSession } from '@/types';
 import { saveLocalSession } from '@/lib/db';
 import { syncSessionToCloud, isCloudConfigured } from '@/lib/supabase';
+import { getLibraryCode } from '@/lib/auth';
 
 interface UseReadingSyncProps {
   bookId: string;
@@ -28,7 +29,9 @@ export function useReadingSync({
   });
 
   const totalPagesRef = useRef(totalPages);
-  totalPagesRef.current = totalPages;
+  useEffect(() => {
+    totalPagesRef.current = totalPages;
+  }, [totalPages]);
 
   const syncTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -40,7 +43,8 @@ export function useReadingSync({
 
       // 2. If cloud is available, push to Supabase
       if (isCloudConfigured()) {
-        await syncSessionToCloud(sessionToSync);
+        const activeCode = getLibraryCode();
+        await syncSessionToCloud(sessionToSync, activeCode);
       }
     } catch (err) {
       console.warn('Error flushing reading session:', err);

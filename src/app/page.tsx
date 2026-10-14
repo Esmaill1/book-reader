@@ -7,7 +7,8 @@ import BookGrid from '@/components/BookGrid';
 import UploadModal from '@/components/UploadModal';
 import { Book, ReadingSession } from '@/types';
 import { getAllLocalBooks, getAllLocalSessions, deleteLocalBook } from '@/lib/db';
-import { fetchCloudBooks, isCloudConfigured } from '@/lib/supabase';
+import { fetchCloudBooks, deleteCloudBook, isCloudConfigured } from '@/lib/supabase';
+import { getLibraryCode, onLibraryCodeChange } from '@/lib/auth';
 import styles from './page.module.css';
 
 const SKELETON_COUNT = 8;
@@ -22,17 +23,18 @@ export default function LibraryPage() {
   const loadLibrary = async () => {
     try {
       setLoading(true);
+      const activeCode = getLibraryCode();
       const [localBooks, localSessions] = await Promise.all([
-        getAllLocalBooks(),
+        getAllLocalBooks(activeCode),
         getAllLocalSessions(),
       ]);
 
       let combinedBooks = [...localBooks];
 
-      // If cloud is enabled, merge cloud books
+      // If cloud is enabled, merge cloud books for this specific library code
       if (isCloudConfigured()) {
         try {
-          const cloudBooks = await fetchCloudBooks();
+          const cloudBooks = await fetchCloudBooks(activeCode);
           const existingIds = new Set(localBooks.map((b) => b.id));
           cloudBooks.forEach((cb) => {
             if (!existingIds.has(cb.id)) {
@@ -60,6 +62,13 @@ export default function LibraryPage() {
 
   useEffect(() => {
     loadLibrary();
+
+    // Re-load library immediately when user switches or changes Auth Code
+    const unsubscribe = onLibraryCodeChange(() => {
+      loadLibrary();
+    });
+
+    return unsubscribe;
   }, []);
 
   const activeBook = useMemo(() => {
@@ -88,7 +97,15 @@ export default function LibraryPage() {
 
   const handleDeleteBook = async (bookId: string) => {
     try {
+      const target = books.find((b) => b.id === bookId);
       await deleteLocalBook(bookId);
+
+      if (isCloudConfigured() && target) {
+        deleteCloudBook(bookId, target.file_path).catch((err) => {
+          console.warn('Cloud book deletion deferred:', err);
+        });
+      }
+
       setBooks((prev) => prev.filter((b) => b.id !== bookId));
       setSessions((prev) => {
         const next = { ...prev };

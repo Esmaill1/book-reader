@@ -5,6 +5,7 @@ import { X, UploadCloud, Loader2, AlertCircle } from 'lucide-react';
 import { parseBookFile } from '@/lib/parser';
 import { saveLocalBook } from '@/lib/db';
 import { uploadBookToCloud, isCloudConfigured } from '@/lib/supabase';
+import { getLibraryCode } from '@/lib/auth';
 import { Book } from '@/types';
 import styles from './UploadModal.module.css';
 
@@ -109,12 +110,14 @@ export default function UploadModal({ isOpen, onClose, onBookAdded }: UploadModa
       const meta = await parseBookFile(file);
       const fileData = await file.arrayBuffer();
 
+      const activeCode = getLibraryCode();
       const newBook: Book = {
         id: crypto.randomUUID(),
+        library_code: activeCode,
         title: meta.title,
         author: meta.author,
         format: meta.format,
-        file_path: `${file.name}`,
+        file_path: `${activeCode}/${crypto.randomUUID()}.${meta.format}`,
         file_size: file.size,
         cover_data_url: meta.coverDataUrl,
         total_pages: meta.totalPages,
@@ -130,7 +133,7 @@ export default function UploadModal({ isOpen, onClose, onBookAdded }: UploadModa
       if (isCloudConfigured()) {
         setStatusMessage('Syncing book to cloud storage...');
         try {
-          await uploadBookToCloud(newBook, fileData);
+          await uploadBookToCloud(newBook, fileData, activeCode);
         } catch (cloudErr) {
           console.warn('Cloud upload deferred:', cloudErr);
         }

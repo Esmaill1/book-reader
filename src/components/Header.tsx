@@ -2,9 +2,21 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Sun, Coffee, Moon, Sparkles, Plus, Wifi, WifiOff } from 'lucide-react';
+import {
+  BookOpen,
+  Sun,
+  Coffee,
+  Moon,
+  Sparkles,
+  Plus,
+  Wifi,
+  WifiOff,
+  Key,
+} from 'lucide-react';
 import { ReadingTheme } from '@/types';
 import { isCloudConfigured } from '@/lib/supabase';
+import { getLibraryCode, onLibraryCodeChange } from '@/lib/auth';
+import AuthCodeModal from './AuthCodeModal';
 import styles from './Header.module.css';
 
 interface HeaderProps {
@@ -21,11 +33,21 @@ const THEMES: { id: ReadingTheme; name: string; hint: string; Icon: typeof Sun }
 export default function Header({ onOpenUpload }: HeaderProps) {
   const [theme, setTheme] = useState<ReadingTheme>('night');
   const [cloudReady, setCloudReady] = useState<boolean>(false);
+  const [authCode, setAuthCode] = useState<string>('');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const saved = (localStorage.getItem('bookera_theme') as ReadingTheme) || 'night';
     setTheme(saved);
     setCloudReady(isCloudConfigured());
+    setAuthCode(getLibraryCode());
+
+    // Keep auth code updated across tabs & custom events
+    const unsubscribe = onLibraryCodeChange((newCode) => {
+      setAuthCode(newCode);
+    });
+
+    return unsubscribe;
   }, []);
 
   const changeTheme = (newTheme: ReadingTheme) => {
@@ -35,44 +57,81 @@ export default function Header({ onOpenUpload }: HeaderProps) {
   };
 
   return (
-    <header className={styles.header}>
-      <div className={styles.leftSection}>
-        <Link href="/" className={styles.brand}>
-          <BookOpen className={styles.logoIcon} aria-hidden="true" />
-          <span className={styles.brandWord}>BookEra</span>
-        </Link>
-        <div className={styles.syncBadge} title={cloudReady ? 'Cloud Sync Active' : 'Local Storage Mode (Offline ready)'}>
-          {cloudReady ? (
-            <Wifi className={`${styles.statusIcon} ${styles.online}`} aria-hidden="true" />
-          ) : (
-            <WifiOff className={`${styles.statusIcon} ${styles.local}`} aria-hidden="true" />
-          )}
-          <span className={`${styles.statusDot} ${cloudReady ? styles.online : styles.local}`} aria-hidden="true" />
-          <span>{cloudReady ? 'Cloud Synced' : 'Local Library'}</span>
-        </div>
-      </div>
+    <>
+      <header className={styles.header}>
+        <div className={styles.leftSection}>
+          <Link href="/" className={styles.brand}>
+            <BookOpen className={styles.logoIcon} aria-hidden="true" />
+            <span className={styles.brandWord}>BookEra</span>
+          </Link>
 
-      <nav className={styles.rightSection} aria-label="Library controls">
-        <div className={styles.themeSelector} role="group" aria-label="Reading theme" title="Switch Reading Theme">
-          {THEMES.map(({ id, name, hint, Icon }) => (
-            <button
-              key={id}
-              onClick={() => changeTheme(id)}
-              className={`${styles.themeBtn} ${theme === id ? styles.active : ''}`}
-              aria-label={`${name} Theme`}
-              aria-pressed={theme === id}
-              title={`${name} (${hint})`}
-            >
-              <Icon size={17} aria-hidden="true" />
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => setIsAuthModalOpen(true)}
+            className={styles.authCodeBtn}
+            title={`Your Library Auth Code is ${authCode}. Click to copy, share, or sync another device.`}
+            aria-label="Library Auth Code"
+          >
+            <Key size={14} className={styles.authCodeIcon} aria-hidden="true" />
+            <span>{authCode || 'AUTH CODE'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsAuthModalOpen(true)}
+            className={styles.syncBadge}
+            title={
+              cloudReady
+                ? 'Cloud Sync Active — click for multi-device sync settings'
+                : 'Local Mode (Offline ready) — click for multi-device sync settings'
+            }
+          >
+            {cloudReady ? (
+              <Wifi className={`${styles.statusIcon} ${styles.online}`} aria-hidden="true" />
+            ) : (
+              <WifiOff className={`${styles.statusIcon} ${styles.local}`} aria-hidden="true" />
+            )}
+            <span
+              className={`${styles.statusDot} ${cloudReady ? styles.online : styles.local}`}
+              aria-hidden="true"
+            />
+            <span>{cloudReady ? 'Cloud Synced' : 'Local Library'}</span>
+          </button>
         </div>
 
-        <button onClick={onOpenUpload} className={styles.uploadBtn}>
-          <Plus size={18} aria-hidden="true" />
-          <span>Add Book</span>
-        </button>
-      </nav>
-    </header>
+        <nav className={styles.rightSection} aria-label="Library controls">
+          <div
+            className={styles.themeSelector}
+            role="group"
+            aria-label="Reading theme"
+            title="Switch Reading Theme"
+          >
+            {THEMES.map(({ id, name, hint, Icon }) => (
+              <button
+                key={id}
+                onClick={() => changeTheme(id)}
+                className={`${styles.themeBtn} ${theme === id ? styles.active : ''}`}
+                aria-label={`${name} Theme`}
+                aria-pressed={theme === id}
+                title={`${name} (${hint})`}
+              >
+                <Icon size={17} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+
+          <button onClick={onOpenUpload} className={styles.uploadBtn}>
+            <Plus size={18} aria-hidden="true" />
+            <span>Add Book</span>
+          </button>
+        </nav>
+      </header>
+
+      <AuthCodeModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onCodeChanged={(code) => setAuthCode(code)}
+      />
+    </>
   );
 }

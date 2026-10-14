@@ -80,10 +80,12 @@ export async function saveLocalBook(book: Book, fileData: ArrayBuffer, mimeType:
   await tx.done;
 }
 
-export async function getAllLocalBooks(): Promise<Book[]> {
+export async function getAllLocalBooks(libraryCode?: string): Promise<Book[]> {
   const db = await getLocalDB();
   if (!db) return [];
-  return db.getAll('books');
+  const all = await db.getAll('books');
+  if (!libraryCode) return all;
+  return all.filter((b) => !b.library_code || b.library_code === libraryCode);
 }
 
 export async function getLocalBook(id: string): Promise<Book | undefined> {
